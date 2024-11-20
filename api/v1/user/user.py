@@ -84,27 +84,3 @@ async def verify_email(data: dict):
         logger.error(f"Email verification error: {str(e)}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-
-# Password reset request API
-# @router.post('/request-reset-password')
-# async def request_reset_password(data: dict, background_tasks: BackgroundTasks):
-#     email = data.get('email')
-#
-#     if not email:
-#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required")
-#
-#     try:
-#         token = auth_service.user_service.request_password_reset(email)
-#         # Create FastAPI-Mail message
-#         msg = MessageSchema(
-#             subject="Password Reset Request",
-#             recipients=[email],
-#             body=f"Use this token to reset your password: {token}",
-#             subtype="plain"
-#         )
-#         await send_email(background_tasks, msg)
-#         logger.info(f"Password reset token sent to email: {email}")
-#         return {"message": "Password reset link has been sent to your email"}
-#     except ValueError as e:
-#         logger.error(f"Password reset error: {str(e)}")
-#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
