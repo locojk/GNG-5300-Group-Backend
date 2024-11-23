@@ -26,16 +26,17 @@ class FitnessGoalDAO:
                 [("user_id", pymongo.ASCENDING)], unique=True  # 确保每个用户只能有一个目标
             )
 
-    def get_goal_by_user_id(self, user_id):
+    def get_goal_by_user_id(self, user_id, db_client=None):
         """Retrieve fitness goal information by user_id."""
         logger.info(f"Fetching fitness goal by user_id: {user_id}")
-        with self.db_client as db_client:
-            goal = db_client.find_one(self.collection_name, {"user_id": ObjectId(user_id)})
-            if goal:
-                logger.debug(f"Fitness goal found: {goal}")
-            else:
-                logger.warning(f"No fitness goal found for user_id: {user_id}")
-            return goal
+        if db_client is None:
+            db_client = self.db_client
+        goal = db_client.find_one(self.collection_name, {"user_id": ObjectId(user_id)})
+        if goal:
+            logger.debug(f"Fitness goal found: {goal}")
+        else:
+            logger.warning(f"No fitness goal found for user_id: {user_id}")
+        return goal
 
     def create_or_update_fitness_goal(self, user_id, goal, days_per_week, workout_duration, rest_days):
         """Create or update a fitness goal for a user."""

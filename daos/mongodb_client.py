@@ -108,7 +108,10 @@ class MongoDBClient:
         return schema
 
     def insert_one(self, collection_name, data, schema=None):
-        if not self.db:
+        """
+        Insert a single document into a collection with optional schema validation.
+        """
+        if self.db is None:  # 显式比较 None
             raise RuntimeError("Database connection is not initialized. Did you forget to use the context manager?")
 
         if schema:
