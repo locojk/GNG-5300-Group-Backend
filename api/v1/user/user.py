@@ -44,3 +44,4 @@ async def login(data: dict = Body(...)):
     result = auth_service.login_user(email, password)
     logger.info(f"User logged in successfully: {result['user_id']}")
     return {"message": "Login successful", "user_id": result['user_id'], "token": result['token']}
+

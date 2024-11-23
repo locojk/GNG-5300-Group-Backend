@@ -4,21 +4,27 @@ User Authentication Service
 @Date: 2024-10-05
 @Author: Adam Lyu
 """
-import os
 
-from jose import jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-from fastapi import Depends, HTTPException
+import os
+from jose import jwt, JWTError
+from fastapi import HTTPException, Request
+from functools import wraps
+from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+security = HTTPBearer()  # 解析 Authorization 头中的 Bearer Token
 from services.user.user_service import UserService
+
 from utils.env_loader import load_platform_specific_env
 
 load_platform_specific_env()
 
 
 class AuthService:
-    def __init__(self, user_service: UserService = Depends()):
-        self.user_service = user_service
+    def __init__(self):
+        self.user_service = UserService()
         self.secret_key = os.getenv('SECRET_KEY')
         self.algorithm = os.getenv('ALGORITHM')
         self.password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -41,8 +47,8 @@ class AuthService:
     def _generate_jwt(self, user_id: str) -> str:
         """Generate JWT token"""
         payload = {
-            "user_id": user_id,
-            "exp": datetime.utcnow() + timedelta(hours=24)  # Token expiration time
+            "user_id": str(user_id),  # 转换 ObjectId 为字符串
+            "exp": datetime.now() + timedelta(hours=24)  # Token expiration time
         }
         token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
         return token
@@ -54,5 +60,29 @@ class AuthService:
             return payload.get("user_id")
         except jwt.ExpiredSignatureError:
             raise HTTPException(status_code=401, detail="Token has expired")
-        except jwt.JWTError:
+        except JWTError:
             raise HTTPException(status_code=401, detail="Invalid token")
+
+    def requires_auth(self, func):
+        """装饰器：验证请求中的 JWT Token"""
+
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            request: Request = kwargs.get("request")
+            if not request:
+                raise HTTPException(status_code=500, detail="Missing request context")
+
+            # 解析请求头中的 Token
+            authorization: HTTPAuthorizationCredentials = await security(request)
+            token = authorization.credentials
+
+            try:
+                # 验证 Token 并提取 user_id
+                user_id = self.verify_token(token)
+
+                # 将 user_id 注入到装饰的函数参数中
+                return await func(*args, user_id=user_id, **kwargs)
+            except HTTPException as e:
+                return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+
+        return wrapper
