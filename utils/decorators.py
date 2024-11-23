@@ -32,43 +32,33 @@ def handle_response(f):
     @wraps(f)
     async def decorated_function(*args, **kwargs):
         try:
-            # Get the original function's return value
+            # 获取原始函数的返回值
             result = await f(*args, **kwargs)
 
-            # If the result is a tuple, unpack content and status code
+            # 如果返回值是 JSONResponse，直接返回
+            if isinstance(result, JSONResponse):
+                return result
+
+            # 如果返回值是元组，解包为内容和状态码
             if isinstance(result, tuple):
                 data, status_code = result
             else:
                 data = result
-                status_code = 200  # Default status code is 200
+                status_code = 200  # 默认状态码为 200
 
-            # Serialize data using the custom JSONEncoder
+            # 使用自定义 JSONEncoder 序列化数据
             serialized_data = json.loads(CustomJSONEncoder().encode(data))
             return JSONResponse(content=serialized_data, status_code=status_code)
 
         except ValidationError as e:
-            # Handle marshmallow validation errors
             logger.warning(f"ValidationError: {e.messages}")
-            raise HTTPException(
-                status_code=400,
-                detail=e.messages  # Pass the detailed validation errors
-            )
+            raise HTTPException(status_code=400, detail=e.messages)
         except HTTPException as e:
-            # Re-raise HTTPExceptions to be handled by FastAPI
             logger.warning(f"HTTPException: {e.detail}")
             raise e
-        except ValueError as e:
-            # Handle custom ValueErrors with a 400 status code
-            logger.error(f"ValueError: {str(e)}")
-            raise HTTPException(status_code=400, detail=str(e))
         except Exception as e:
-            # Handle all other exceptions with a 500 status code
             logger.error(f"Unhandled Exception: {str(e)}", exc_info=True)
-            if os.getenv('DEBUG', False):
-                # Include detailed error messages in debug mode
-                raise HTTPException(status_code=500, detail=str(e))
-            else:
-                # Generic error message in production mode
-                raise HTTPException(status_code=500, detail="Internal server error")
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     return decorated_function
+

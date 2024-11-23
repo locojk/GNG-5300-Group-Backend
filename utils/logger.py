@@ -4,7 +4,9 @@ import uuid
 from logging.handlers import RotatingFileHandler
 import json
 from utils.env_loader import load_platform_specific_env
+
 load_platform_specific_env()
+
 
 class JsonFormatter(logging.Formatter):
     def __init__(self, json_format=False):
@@ -16,20 +18,27 @@ class JsonFormatter(logging.Formatter):
         self.json_format = json_format
 
     def format(self, record):
+        # 通用的详细日志字段
+        log_record = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "log_level": record.levelname,
+            "log_id": str(uuid.uuid4()),
+            "file": os.path.basename(record.pathname),  # 文件名
+            "function": record.funcName,  # 函数名
+            "line": record.lineno,  # 行号
+            "message": record.getMessage(),  # 日志消息
+        }
+
+        # 如果是 JSON 格式，直接返回 JSON 字符串
         if self.json_format:
-            log_record = {
-                "timestamp": self.formatTime(record, self.datefmt),
-                "log_level": record.levelname,
-                "log_id": str(uuid.uuid4()),
-                "file": os.path.basename(record.pathname),
-                "function": record.funcName,
-                "line": record.lineno,
-                "message": record.getMessage(),
-            }
             return json.dumps(log_record)
-        else:
-            # 标准日志格式
-            return f"{self.formatTime(record, self.datefmt)} - {record.levelname} - {record.getMessage()}"
+
+        # 标准格式返回字符串形式，包含详细信息
+        return (
+            f"[{log_record['timestamp']}] {log_record['log_level']} "
+            f"[{log_record['file']}:{log_record['line']} - {log_record['function']}] "
+            f"{log_record['message']}"
+        )
 
 
 class Logger:
