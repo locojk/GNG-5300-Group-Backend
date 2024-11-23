@@ -4,9 +4,10 @@ from pathlib import Path
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, CollectionInvalid
 from jsonschema import validate, ValidationError
-from utils.logger import logger
+from utils.logger import Logger
 from utils.env_loader import load_platform_specific_env
 
+logger = Logger(__name__)
 # Dynamically load environment variables based on OS and hostname
 load_platform_specific_env()
 

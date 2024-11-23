@@ -4,8 +4,8 @@ from daos.user.users_dao import UserDAO
 from flask_bcrypt import Bcrypt
 from utils.auth_helpers import generate_reset_token
 from utils.email_helpers import send_reset_email
-from utils.logger import logger
-
+from utils.logger import Logger
+logger = Logger(__name__)
 bcrypt = Bcrypt()
 
 

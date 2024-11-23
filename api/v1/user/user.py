@@ -1,45 +1,46 @@
-"""
-@Time ： 2024-10-05
-@Auth ： Adam Lyu
-"""
-
-from utils.logger import logger  # 假设你的日志工具在 utils/logger.py 中
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, Body
+from utils.logger import Logger
 from services.user.auth_service import AuthService
-from services.user.validation import RegistrationValidationSchema, LoginValidationSchema
 from utils.decorators import handle_response
+from services.user.validation import RegistrationValidationSchema, LoginValidationSchema
 
+logger = Logger(__name__)
 router = APIRouter()
 auth_service = AuthService()
 
 
-# 使用装饰器包装路由函数
+# 用户注册路由
 @router.post('/register')
 @handle_response
-async def register(data: dict):
+async def register(data: dict = Body(...)):
     schema = RegistrationValidationSchema()
+    # 使用 marshmallow 验证数据
+    validated_data = schema.load(data)
 
-    # 验证并处理数据
-    schema.load(data)
-    username = data['username']
-    email = data['email']
-    password = data['password']
+    # 从验证后的数据中获取字段
+    username = validated_data['username']
+    email = validated_data['email']
+    password = validated_data['password']
 
+    # 注册用户
     user_id = auth_service.register_user(username, email, password)
     logger.info(f"User registered successfully: {user_id}")
     return {"message": "Registration successful", "user_id": user_id}
 
 
+# 用户登录路由
 @router.post('/login')
 @handle_response
-async def login(data: dict):
+async def login(data: dict = Body(...)):
     schema = LoginValidationSchema()
+    # 使用 marshmallow 验证数据
+    validated_data = schema.load(data)
 
-    # 验证并处理数据
-    schema.load(data)
-    email = data['email']
-    password = data['password']
+    # 从验证后的数据中获取字段
+    email = validated_data['email']
+    password = validated_data['password']
 
+    # 用户登录
     result = auth_service.login_user(email, password)
     logger.info(f"User logged in successfully: {result['user_id']}")
     return {"message": "Login successful", "user_id": result['user_id'], "token": result['token']}

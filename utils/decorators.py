@@ -4,15 +4,17 @@ Custom JSON Encoder and Response Handler
 @Date: 2024-10-20
 @Author: Adam Lyu
 """
-
+import os
 from functools import wraps
 from fastapi.responses import JSONResponse
+from marshmallow import ValidationError
 from fastapi import HTTPException
 from bson import ObjectId  # Import ObjectId
 from datetime import datetime  # Import datetime
+from utils.env_loader import load_platform_specific_env
 import json
 import logging
-
+load_platform_specific_env()
 logger = logging.getLogger(__name__)
 
 
@@ -44,6 +46,17 @@ def handle_response(f):
             serialized_data = json.loads(CustomJSONEncoder().encode(data))
             return JSONResponse(content=serialized_data, status_code=status_code)
 
+        except ValidationError as e:
+            # Handle marshmallow validation errors
+            logger.warning(f"ValidationError: {e.messages}")
+            raise HTTPException(
+                status_code=400,
+                detail=e.messages  # Pass the detailed validation errors
+            )
+        except HTTPException as e:
+            # Re-raise HTTPExceptions to be handled by FastAPI
+            logger.warning(f"HTTPException: {e.detail}")
+            raise e
         except ValueError as e:
             # Handle custom ValueErrors with a 400 status code
             logger.error(f"ValueError: {str(e)}")
@@ -51,6 +64,11 @@ def handle_response(f):
         except Exception as e:
             # Handle all other exceptions with a 500 status code
             logger.error(f"Unhandled Exception: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail="Internal server error")
+            if os.getenv('DEBUG', False):
+                # Include detailed error messages in debug mode
+                raise HTTPException(status_code=500, detail=str(e))
+            else:
+                # Generic error message in production mode
+                raise HTTPException(status_code=500, detail="Internal server error")
 
     return decorated_function
