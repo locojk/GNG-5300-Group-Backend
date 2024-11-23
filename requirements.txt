@@ -16,8 +16,9 @@ Jinja2==3.1.4
 MarkupSafe==3.0.2
 marshmallow==3.23.1
 packaging==24.2
-pydantic==2.9.2
-pydantic_core==2.23.4
+pydantic==2.10.1
+pydantic-core==2.27.1
+email-validator==2.2.0
 pymongo==4.10.1
 python-dotenv==1.0.1
 requests==2.32.3

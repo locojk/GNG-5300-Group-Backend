@@ -67,21 +67,18 @@ class AuthService:
         """装饰器：验证请求中的 JWT Token"""
 
         @wraps(func)
-        async def wrapper(*args, **kwargs):
-            request: Request = kwargs.get("request")
-            if not request:
-                raise HTTPException(status_code=500, detail="Missing request context")
+        async def wrapper(request: Request, *args, **kwargs):
+            authorization = request.headers.get("Authorization")
+            if not authorization or not authorization.startswith("Bearer "):
+                raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
 
-            # 解析请求头中的 Token
-            authorization: HTTPAuthorizationCredentials = await security(request)
-            token = authorization.credentials
+            token = authorization.split(" ")[1]
 
             try:
-                # 验证 Token 并提取 user_id
                 user_id = self.verify_token(token)
-
-                # 将 user_id 注入到装饰的函数参数中
-                return await func(*args, user_id=user_id, **kwargs)
+                # 将 user_id 存入 request.state 中
+                request.state.user_id = user_id
+                return await func(request, *args, **kwargs)
             except HTTPException as e:
                 return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
 

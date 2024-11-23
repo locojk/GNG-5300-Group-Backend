@@ -5,6 +5,7 @@ from flask_bcrypt import Bcrypt
 from utils.auth_helpers import generate_reset_token
 from utils.email_helpers import send_reset_email
 from utils.logger import Logger
+
 logger = Logger(__name__)
 bcrypt = Bcrypt()
 
@@ -42,8 +43,22 @@ class UserService:
 
     # Update user information
     def update_user_info(self, user_id, **kwargs):
-        # kwargs can include fields like first_name, last_name, avatar_file_id, status, etc.
-        self.user_dao.update_user_info(user_id, **kwargs)
+        """
+        Update user information dynamically.
+
+        Args:
+            user_id (str): The ID of the user.
+            kwargs: Key-value pairs of fields to update.
+
+        Example:
+            update_user_info("user_id", first_name="John", last_name="Doe")
+        """
+        if not kwargs:
+            logger.warning("No fields provided for update")
+            raise ValueError("No fields provided for update")
+
+        logger.debug(f"Updating user {user_id} with data: {kwargs}")
+        self.user_dao.update_user_info(user_id, kwargs)
 
     # Update email verification status
     def verify_user_email(self, user_id):

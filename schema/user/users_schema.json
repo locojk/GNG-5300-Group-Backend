@@ -27,9 +27,19 @@
         "bsonType": "string",
         "description": "User's last name"
       },
-      "avatar_file_id": {
-        "bsonType": "string",
-        "description": "ID or path to the user's avatar file"
+      "avatar": {
+        "bsonType": "object",
+        "properties": {
+          "file_id": {
+            "bsonType": "string",
+            "description": "ID or path to the user's avatar file"
+          },
+          "url": {
+            "bsonType": "string",
+            "description": "Public URL for accessing the user's avatar"
+          }
+        },
+        "description": "User's avatar information"
       },
       "status": {
         "enum": ["active", "inactive", "banned", "deleted"],
@@ -42,6 +52,21 @@
       "role": {
         "enum": ["user", "admin", "moderator", "vip"],
         "description": "User's role in the application"
+      },
+      "age": {
+        "bsonType": "int",
+        "minimum": 0,
+        "description": "User's age, optional but required for fitness features"
+      },
+      "weight_kg": {
+        "bsonType": "double",
+        "minimum": 0,
+        "description": "User's weight in kilograms"
+      },
+      "height_cm": {
+        "bsonType": "double",
+        "minimum": 0,
+        "description": "User's height in centimeters"
       },
       "password_reset_token": {
         "bsonType": "string",

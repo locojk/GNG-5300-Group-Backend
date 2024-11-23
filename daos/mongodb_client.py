@@ -141,13 +141,29 @@ class MongoDBClient:
         collection = self.db[collection_name]
         return collection.update_one(query, update)
 
-    def find_one(self, collection_name, query, include_deleted=False):
-        """Find a single document, ignoring soft-deleted documents by default"""
+    def find_one(self, collection_name, query, include_deleted=False, projection=None):
+        """
+        Find a single document, ignoring soft-deleted documents by default.
+
+        Args:
+            collection_name (str): The name of the collection to query.
+            query (dict): The query to filter documents.
+            include_deleted (bool): Whether to include soft-deleted documents.
+            projection (dict): A projection dict to include or exclude specific fields.
+                               E.g., {"password": 0} to exclude the password field.
+
+        Returns:
+            dict: The found document, or None if no document matches the query.
+        """
         logger.info(f"Finding one document in collection: {collection_name} with query: {query}")
+
+        # Exclude soft-deleted documents unless explicitly allowed
         if not include_deleted:
             query["is_deleted"] = False
+
+        # Execute the query with the optional projection
         collection = self.db[collection_name]
-        result = collection.find_one(query)
+        result = collection.find_one(query, projection=projection)
         logger.info(f"Find one result: {result}")
         return result
 

@@ -148,16 +148,68 @@ class UserDAO:
             return result
 
     def get_user_by_id(self, user_id):
-        """Retrieve user information by ObjectId"""
+        """Retrieve user information by ObjectId, excluding sensitive fields like password"""
         logger.info(f"Fetching user by user_id: {user_id}")
         with self.db_client as db_client:
             try:
-                user = db_client.find_one(self.collection_name, {"_id": ObjectId(user_id)})
+                user = db_client.find_one(
+                    self.collection_name,
+                    {"_id": ObjectId(user_id)},
+                    projection={"password": 0}  # 排除 password 字段
+                )
                 logger.debug(f"User retrieved: {user}")
                 return user
             except Exception as e:
                 logger.error(f"Error fetching user by id: {e}")
                 raise ValueError(f"Error fetching user by id: {e}")
+
+    def update_user_info(self, user_id, update_fields):
+        """
+        Update user information dynamically.
+
+        Args:
+            user_id (str): The ID of the user to update.
+            update_fields (dict): A dictionary of fields to update with their new values.
+
+        Returns:
+            dict: Result of the update operation.
+        """
+        logger.info(f"Updating user information for user_id: {user_id}")
+        if not isinstance(update_fields, dict) or not update_fields:
+            logger.error("update_fields must be a non-empty dictionary")
+            raise ValueError("update_fields must be a non-empty dictionary")
+
+        # Add the `updated_at` timestamp automatically
+        update_fields["updated_at"] = time.strftime('%Y-%m-%d %H:%M:%S')
+
+        query = {"_id": ObjectId(user_id)}
+        update_data = {"$set": update_fields}
+
+        logger.debug(f"Query: {query}, Update data: {update_data}")
+
+        with self.db_client as db_client:
+            result = db_client.update_one(self.collection_name, query, update_data)
+            if result.matched_count > 0:
+                logger.audit_log(
+                    user_id=str(user_id),
+                    action="update_user_info",
+                    resource="users",
+                    status="success",
+                    details=f"User updated with fields: {update_fields}"
+                )
+            else:
+                logger.warning(f"No user found with user_id: {user_id}")
+                logger.audit_log(
+                    user_id=str(user_id),
+                    action="update_user_info",
+                    resource="users",
+                    status="failed",
+                    details=f"Update failed for user_id: {user_id}"
+                )
+            return {
+                "matched_count": result.matched_count,
+                "modified_count": result.modified_count
+            }
 
 
 if __name__ == "__main__":
