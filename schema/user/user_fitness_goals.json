@@ -1,0 +1,19 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["user_id", "goal", "days_per_week", "workout_duration", "rest_days"],
+    "properties": {
+      "user_id": { "bsonType": "objectId", "description": "Reference to the user's ID" },
+      "goal": { "enum": ["strength", "weight_loss", "flexibility"], "description": "User's fitness goal" },
+      "days_per_week": { "bsonType": "int", "minimum": 1, "maximum": 7, "description": "Number of workout days per week" },
+      "workout_duration": { "bsonType": "int", "minimum": 10, "description": "Duration of each workout in minutes" },
+      "rest_days": {
+        "bsonType": "array",
+        "items": { "bsonType": "string" },
+        "description": "Days of the week the user rests"
+      },
+      "created_at": { "bsonType": "date" },
+      "updated_at": { "bsonType": "date" }
+    }
+  }
+}

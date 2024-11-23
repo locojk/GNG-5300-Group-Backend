@@ -3,7 +3,7 @@
 @Auth ： Adam Lyu
 """
 from marshmallow import Schema, fields, ValidationError, validates
-
+from pydantic import BaseModel, EmailStr, Field
 from daos.user.users_dao import UserDAO
 
 
@@ -45,3 +45,14 @@ class LoginValidationSchema(Schema):
     def validate_password(self, value):
         if len(value) < 6:
             raise ValidationError("Password must be at least 6 characters long")
+
+
+# 更新用户资料验证（Pydantic）
+class UserProfileUpdateSchema(BaseModel):
+    username: str = Field(None, max_length=50)
+    email: EmailStr = None
+    first_name: str = Field(None, max_length=50)
+    last_name: str = Field(None, max_length=50)
+    weight_kg: float = Field(None, ge=0)  # 必须大于或等于 0
+    height_cm: float = Field(None, ge=0)  # 必须大于或等于 0
+    age: int = Field(None, ge=0, le=150)  # 必须是 0 到 150 之间的整数
