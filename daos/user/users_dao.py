@@ -68,11 +68,16 @@ class UserDAO:
     def update_last_login(self, user_id):
         """Update the last login timestamp"""
         logger.info(f"Updating last login for user_id: {user_id}")
+        query = {"_id": ObjectId(user_id)}
+        update_data = {"last_login": time.strftime('%Y-%m-%d %H:%M:%S')}
+        logger.debug(f"Query: {query}, Update data: {update_data}")
+
+        # 直接传入正确格式的更新数据
         with self.db_client as db_client:
             result = db_client.update_one(
                 self.collection_name,
-                {"_id": ObjectId(user_id)},
-                {"$set": {"last_login": time.strftime('%Y-%m-%d %H:%M:%S')}}
+                query,
+                {"$set": update_data}  # 确保只封装一次 $set
             )
             logger.audit_log(
                 user_id=str(user_id),
@@ -153,3 +158,11 @@ class UserDAO:
             except Exception as e:
                 logger.error(f"Error fetching user by id: {e}")
                 raise ValueError(f"Error fetching user by id: {e}")
+
+
+if __name__ == "__main__":
+    import secrets
+
+    # 生成一个 32 字节长度的随机密钥（推荐用于 SECRET_KEY）
+    secret_key = secrets.token_hex(32)
+    print(f"Generated SECRET_KEY: {secret_key}")

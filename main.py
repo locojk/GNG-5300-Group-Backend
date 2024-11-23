@@ -3,6 +3,7 @@ from api import router as api_router  # Import the top-level router object from 
 
 app = FastAPI()
 
+
 # Register API routes with "/api" prefix
 app.include_router(api_router, prefix="/api")
 

@@ -4,56 +4,55 @@ User Authentication Service
 @Date: 2024-10-05
 @Author: Adam Lyu
 """
+import os
 
-import jwt
-import datetime
-from flask_bcrypt import Bcrypt
-from flask import current_app
+from jose import jwt
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
+from fastapi import Depends, HTTPException
 from services.user.user_service import UserService
+from utils.env_loader import load_platform_specific_env
 
-bcrypt = Bcrypt()
-user_service = UserService()
+load_platform_specific_env()
 
 
 class AuthService:
-    def __init__(self):
+    def __init__(self, user_service: UserService = Depends()):
         self.user_service = user_service
+        self.secret_key = os.getenv('SECRET_KEY')
+        self.algorithm = os.getenv('ALGORITHM')
+        self.password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-    def register_user(self, username, email, password):
-        # Use UserService to register a new user
-        user_id = self.user_service.register_user(username, email, password)
+    def register_user(self, username: str, email: str, password: str) -> str:
+        """Register a new user"""
+        # Hash the password before saving
+        hashed_password = self.password_context.hash(password)
+        user_id = self.user_service.register_user(username, email, hashed_password)
         return user_id
 
-    def login_user(self, email, password):
-        # Use UserService to validate login
+    def login_user(self, email: str, password: str) -> dict:
+        """Validate login and return JWT"""
+        # Validate user credentials
         user_id = self.user_service.login_user(email, password)
-
         # Generate JWT
         token = self._generate_jwt(user_id)
         return {"user_id": user_id, "token": token}
 
-    def _generate_jwt(self, user_id):
-        # Retrieve SECRET_KEY and ALGORITHM from config
-        secret_key = current_app.config['SECRET_KEY']
-        algorithm = current_app.config.get('ALGORITHM', 'HS256')
-
+    def _generate_jwt(self, user_id: str) -> str:
+        """Generate JWT token"""
         payload = {
-            'user_id': user_id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)  # Token expiration time
+            "user_id": user_id,
+            "exp": datetime.utcnow() + timedelta(hours=24)  # Token expiration time
         }
-        token = jwt.encode(payload, secret_key, algorithm=algorithm)
+        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
         return token
 
-    def verify_token(self, token):
+    def verify_token(self, token: str) -> str:
+        """Verify JWT token and return user_id"""
         try:
-            # Retrieve SECRET_KEY and ALGORITHM from config
-            secret_key = current_app.config['SECRET_KEY']
-            algorithm = current_app.config.get('ALGORITHM', 'HS256')
-
-            payload = jwt.decode(token, secret_key, algorithms=[algorithm])
-            user_id = payload.get('user_id')
-            return user_id
+            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            return payload.get("user_id")
         except jwt.ExpiredSignatureError:
-            raise ValueError("Token has expired")
-        except jwt.InvalidTokenError:
-            raise ValueError("Invalid token")
+            raise HTTPException(status_code=401, detail="Token has expired")
+        except jwt.JWTError:
+            raise HTTPException(status_code=401, detail="Invalid token")
