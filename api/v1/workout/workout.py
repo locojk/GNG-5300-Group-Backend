@@ -26,14 +26,10 @@ async def get_fitness_goal(request: Request):
     获取用户的健身目标
     """
     user_id = request.state.user_id  # 从 request.state 获取 user_id
-    try:
-        result = service.get_fitness_goal(user_id)
-        if not result["data"]:
-            raise HTTPException(status_code=404, detail=result["message"])
-        return {"status": "success", "data": result["data"]}
-    except Exception as e:
-        logger.error(f"Error fetching fitness goal for user_id {user_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    result = service.get_fitness_goal(user_id)
+    if not result["data"]:
+        raise HTTPException(status_code=404, detail=result["message"])
+    return {"status": "success", "data": result["data"]}
 
 
 @router.post("/fitness_goal")
@@ -48,12 +44,6 @@ async def create_or_update_fitness_goal(request: Request, body: CreateOrUpdateGo
     # 直接将模型转为字典，并传递给服务层
     result = service.create_or_update_fitness_goal(user_id=user_id, data=body.dict(exclude_unset=True))
     return {"status": "success", "message": result["message"], "data": result["data"]}
-    # except ValueError as ve:
-    #     logger.warning(f"Validation error for user_id {user_id}: {ve}")
-    #     raise HTTPException(status_code=400, detail=str(ve))
-    # except Exception as e:
-    #     logger.error(f"Error creating or updating fitness goal for user_id {user_id}: {e}")
-    #     raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.patch("/fitness_goal")

@@ -30,8 +30,10 @@ class FitnessGoalDAO:
         """Retrieve fitness goal information by user_id."""
         logger.info(f"Fetching fitness goal by user_id: {user_id}")
         if db_client is None:
-            db_client = self.db_client
-        goal = db_client.find_one(self.collection_name, {"user_id": ObjectId(user_id)})
+            with self.db_client as db_client:
+                goal = db_client.find_one(self.collection_name, {"user_id": ObjectId(user_id)})
+        else:
+            goal = db_client.find_one(self.collection_name, {"user_id": ObjectId(user_id)})
         if goal:
             logger.debug(f"Fitness goal found: {goal}")
         else:
