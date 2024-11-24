@@ -30,13 +30,14 @@ class MongoDBClient:
         """Connect to MongoDB and test connection"""
         if not self.client:
             try:
-                logger.info(f"Attempting to connect to MongoDB: {self.db_name}")
+                logger.info(f"Connecting to MongoDB: URI={self.uri}, DB_NAME={self.db_name}")
                 self.client = MongoClient(self.uri)
                 self.db = self.client[self.db_name]
-                self.client.admin.command('ping')  # Test connection
+                self.client.admin.command('ping')  # 测试连接
                 logger.info(f"Successfully connected to MongoDB database: {self.db_name}")
-            except ConnectionFailure as e:
-                logger.error(f"Failed to connect to MongoDB: {str(e)}")
+            except Exception as e:
+                logger.error(f"Failed to connect to MongoDB: {str(e)}", exc_info=True)
+                self.db = None
                 raise
 
     def __enter__(self):
@@ -109,10 +110,10 @@ class MongoDBClient:
     def insert_one(self, collection_name, data, schema=None):
         """
         Insert a single document into a collection with optional schema validation.
-        :param collection_name: Target collection name
-        :param data: Document data to insert
-        :param schema: JSON Schema for validation
         """
+        if self.db is None:  # 显式比较 None
+            raise RuntimeError("Database connection is not initialized. Did you forget to use the context manager?")
+
         if schema:
             self.validate_data(data, schema)
 
