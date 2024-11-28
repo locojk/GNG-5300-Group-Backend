@@ -36,7 +36,7 @@ class MongoDBClient:
                 self.client.admin.command('ping')  # 测试连接
                 logger.info(f"Successfully connected to MongoDB database: {self.db_name}")
             except Exception as e:
-                logger.error(f"Failed to connect to MongoDB: {str(e)}", exc_info=True)
+                logger.error(f"Failed to connect to MongoDB: {str(e)}")
                 self.db = None
                 raise
 
