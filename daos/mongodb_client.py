@@ -62,20 +62,23 @@ class MongoDBClient:
         :param schema_filename: Name of the schema file
         :return: Parsed JSON Schema
         """
-        # Set base schema directory
-        base_path = Path(__file__).parent.parent / 'schema'
+        base_path = Path(__file__).parent.parent / "schema"
 
-        # Traverse all subdirectories to find the schema file
-        schema_path = next(base_path.rglob(schema_filename), None)  # Use rglob to recursively search
-
-        logger.debug(f"Searching for schema: {schema_filename} in {base_path}")
-        if not schema_path or not schema_path.exists():
-            raise FileNotFoundError(f"Schema file not found: {schema_filename} in {base_path} or its subdirectories.")
-
-        # Load and return the JSON schema
-        logger.debug(f"Found schema file at: {schema_path}")
-        with open(schema_path, 'r') as f:
-            return json.load(f)
+        logger.debug(f"Base path for schemas: {base_path.resolve()}")
+        try:
+            # Search for the schema file in all subdirectories
+            schema_path = next(base_path.rglob(schema_filename))
+            logger.debug(f"Found schema file at: {schema_path}")
+            with open(schema_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except StopIteration:
+            logger.error(f"Schema file not found: {schema_filename} in {base_path.resolve()} or its subdirectories.")
+            raise FileNotFoundError(
+                f"Schema file not found: {schema_filename} in {base_path.resolve()} or its subdirectories."
+            )
+        except Exception as e:
+            logger.error(f"Error loading schema file {schema_filename}: {str(e)}")
+            raise
 
     def validate_data(self, data, schema):
         """
