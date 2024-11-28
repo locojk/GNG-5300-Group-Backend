@@ -31,7 +31,7 @@ class MongoDBClient:
         if not self.client:
             try:
                 logger.info(f"Connecting to MongoDB: URI={self.uri}, DB_NAME={self.db_name}")
-                self.client = MongoClient(self.uri)
+                self.client = MongoClient(self.uri, tlsAllowInvalidCertificates=True)
                 self.db = self.client[self.db_name]
                 self.client.admin.command('ping')  # 测试连接
                 logger.info(f"Successfully connected to MongoDB database: {self.db_name}")
