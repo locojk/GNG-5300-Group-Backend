@@ -45,7 +45,7 @@ async def login(data: dict = Body(...)):
     # 用户登录
     result = auth_service.login_user(email, password)
     logger.info(f"User logged in successfully: {result['user_id']}")
-    return {"message": "Login successful", "user_id": result['user_id'], "token": result['token']}
+    return {"message": "Login successful", "user_id": result['user_id'], "username": result['username'], "token": result['token']}
 
 
 @router.get("/profile")

@@ -28,8 +28,6 @@ class RegistrationValidationSchema(Schema):
             raise ValidationError("Password must contain at least one lowercase letter")
         if not any(char.isdigit() for char in value):
             raise ValidationError("Password must contain at least one digit")
-        if not any(char in "!@#$%^&*()_+-=[]{}|;':,.<>?/`~" for char in value):
-            raise ValidationError("Password must contain at least one special character")
 
     @validates('email')
     def validate_email(self, value):

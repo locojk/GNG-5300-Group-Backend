@@ -37,12 +37,16 @@ class AuthService:
         return user_id
 
     def login_user(self, email: str, password: str) -> dict:
-        """Validate login and return JWT"""
-        # Validate user credentials
-        user_id = self.user_service.login_user(email, password)
+        """Validate login and return user ID, username, and JWT"""
+        # Validate user credentials and retrieve user_id and username
+        user_id, username = self.user_service.login_user(email, password)
+
         # Generate JWT
         token = self._generate_jwt(user_id)
-        return {"user_id": user_id, "token": token}
+
+        return {"user_id": user_id, "username": username, "token": token}
+
+
 
     def _generate_jwt(self, user_id: str) -> str:
         """Generate JWT token"""
