@@ -56,15 +56,40 @@ class AIChatService:
             logger.info("Retrieval QA chain created successfully.")
 
             # 初始化响应结构
+            # self.response_schemas = [
+            #     ResponseSchema(name="Workout Name", description="Name of the workout"),
+            #     ResponseSchema(name="Duration", description="Duration of the workout in minutes"),
+            #     ResponseSchema(name="Difficulty", description="Difficulty level of the workout"),
+            #     ResponseSchema(name="Exercises", description="List of exercises included in the workout, with instructions for each exercise"),
+            #     ResponseSchema(name="Estimated Calories Burned", description="Estimated calories burned during the workout"),
+            #     ResponseSchema(name="Equipment Needed", description="List of equipment needed for the workout"),
+            #     ResponseSchema(name="Additional Tips", description="Any additional tips for the user"),
+            #     ResponseSchema(name="Total Calories Burned", description="Total calories burned for the entire workout plan")
+            # ]
+            
             self.response_schemas = [
                 ResponseSchema(name="Workout Name", description="Name of the workout"),
                 ResponseSchema(name="Duration", description="Duration of the workout in minutes"),
                 ResponseSchema(name="Difficulty", description="Difficulty level of the workout"),
-                ResponseSchema(name="Exercises", description="List of exercises included in the workout"),
-                ResponseSchema(name="Estimated Calories Burned",
-                               description="Estimated calories burned during the workout"),
+                ResponseSchema(
+                    name="Exercises",
+                    description="List of exercises included in the workout. Each exercise includes its name and specific instructions.",
+                    schema={
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "Name": {"type": "string", "description": "Name of the exercise"},
+                                "Instructions": {"type": "string", "description": "Step-by-step instructions for performing the exercise"}
+                            },
+                            "required": ["Name", "Instructions"]
+                        }
+                    }
+                ),
+                ResponseSchema(name="Estimated Calories Burned", description="Estimated calories burned during the workout"),
                 ResponseSchema(name="Equipment Needed", description="List of equipment needed for the workout"),
-                ResponseSchema(name="Additional Tips", description="Any additional tips for the user")
+                ResponseSchema(name="Additional Tips", description="Any additional tips for the user"),
+                ResponseSchema(name="Total Calories Burned", description="Total calories burned for the entire workout plan")
             ]
             self.parser = StructuredOutputParser.from_response_schemas(self.response_schemas)
             self.format_instructions = self.parser.get_format_instructions()
