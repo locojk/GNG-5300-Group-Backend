@@ -129,7 +129,7 @@ if __name__ == "__main__":
 
     # 创建或更新健身目标
     result = dao.create_or_update_fitness_goal(
-        user_id="674a15955311e41c60aefd23",
+        user_id="674a21ac406725261a1ad15f",
         goal="strength",
         days_per_week=5,
         workout_duration=60,

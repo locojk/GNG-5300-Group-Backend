@@ -133,3 +133,4 @@ class UserDAO:
             else:
                 logger.warning(f"No user found to update: {user_id}")
             return result
+
