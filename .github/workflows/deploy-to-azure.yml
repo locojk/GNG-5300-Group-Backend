@@ -49,6 +49,7 @@ jobs:
 
             # 启动新容器，传递环境变量
             docker run -d --name fitness-container \
+              -e GITHUB_SHA="${{ github.sha }}" \
               -e ALGORITHM="${{ secrets.ALGORITHM }}" \
               -e MONGO_URI="${{ secrets.MONGO_URI }}" \
               -e SECRET_KEY="${{ secrets.SECRET_KEY }}" \
