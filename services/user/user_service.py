@@ -1,7 +1,6 @@
-import os
 from datetime import time
 from daos.user.users_dao import UserDAO
-import bcrypt
+from passlib.context import CryptContext
 from utils.auth_helpers import generate_reset_token
 from utils.email_helpers import send_reset_email
 from utils.logger import Logger
@@ -13,42 +12,30 @@ logger = Logger(__name__)
 class UserService:
     def __init__(self):
         self.user_dao = UserDAO()
+        self.password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     # Email and password-based user registration
+
     def register_user(self, username, email, password):
         if self.user_dao.get_user_by_email(email):
             raise ValueError("Email already exists")
 
-        # 打印原始密码明文和编码后的密码
-        logger.debug(f"Register - Plain Password: {password}")
-        logger.debug(f"Register - Encoded Password: {password.encode('utf-8')}")
-
-        # 生成哈希密码并打印
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        hashed_password = self.password_context.hash(password)
         logger.debug(f"Register - Generated Hashed Password: {hashed_password}")
-
-        # 存储到数据库
         user_id = self.user_dao.insert_user(username, email, hashed_password)
         return user_id
 
-    # User login with email and password
     def login_user(self, email, password):
         user = self.user_dao.get_user_by_email(email)
         if not user:
             raise ValueError("Incorrect email or password")
 
-        # 打印用户输入的明文密码和编码后的密码
-        logger.debug(f"Login - Plain Password: {password}")
-        logger.debug(f"Login - Encoded Password: {password.encode('utf-8')}")
+        stored_hashed_password = user['password']
+        logger.debug(f"Login - Stored Hashed Password: {stored_hashed_password}")
 
-        # 打印数据库中存储的哈希密码
-        logger.debug(f"Login - Stored Hashed Password: {user['password']}")
-
-        # 验证密码并打印结果
-        if bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+        if self.password_context.verify(password, stored_hashed_password):
             logger.debug("Login - Password match successful")
-            self.user_dao.update_last_login(user['_id'])  # 更新最后登录时间
-            return user['_id'], user.get('username')  # 返回用户 ID 和用户名
+            return user['_id'], user.get('username')
         else:
             logger.warning("Login - Password mismatch")
             raise ValueError("Incorrect email or password")
