@@ -24,15 +24,26 @@ def retrieve_answer(input_data):
     # Retrieve matching documents
     matching_docs = retrieve_query(query)
     
-    # Define the JSON schema for the response
+    # # Define the JSON schema for the response
+    # response_schemas = [
+    #     ResponseSchema(name="Workout Name", description="Name of the workout"),
+    #     ResponseSchema(name="Duration", description="Duration of the workout in minutes"),
+    #     ResponseSchema(name="Difficulty", description="Difficulty level of the workout"),
+    #     ResponseSchema(name="Exercises", description="List of exercises included in the workout"),
+    #     ResponseSchema(name="Estimated Calories Burned", description="Estimated calories burned during the workout"),
+    #     ResponseSchema(name="Equipment Needed", description="List of equipment needed for the workout"),
+    #     ResponseSchema(name="Additional Tips", description="Any additional tips for the user")
+    # ]
+    
     response_schemas = [
         ResponseSchema(name="Workout Name", description="Name of the workout"),
         ResponseSchema(name="Duration", description="Duration of the workout in minutes"),
         ResponseSchema(name="Difficulty", description="Difficulty level of the workout"),
-        ResponseSchema(name="Exercises", description="List of exercises included in the workout"),
+        ResponseSchema(name="Exercises", description="List of exercises included in the workout, with instructions for each exercise"),
         ResponseSchema(name="Estimated Calories Burned", description="Estimated calories burned during the workout"),
         ResponseSchema(name="Equipment Needed", description="List of equipment needed for the workout"),
-        ResponseSchema(name="Additional Tips", description="Any additional tips for the user")
+        ResponseSchema(name="Additional Tips", description="Any additional tips for the user"),
+        ResponseSchema(name="Total Calories Burned", description="Total calories burned for the entire workout plan")
     ]
 
     # Set up the StructuredOutputParser
