@@ -20,45 +20,38 @@ from services.user.user_service import UserService
 from utils.env_loader import load_platform_specific_env
 
 load_platform_specific_env()
+from utils.logger import Logger
+
+logger = Logger(__name__)
 
 
 class AuthService:
     def __init__(self):
         self.user_service = UserService()
         self.secret_key = os.getenv('SECRET_KEY')
-        self.algorithm = os.getenv('ALGORITHM')
+        if not self.secret_key:
+            raise ValueError("SECRET_KEY is not set in environment variables")
+        self.algorithm = os.getenv('ALGORITHM', 'HS256')
         self.password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     def register_user(self, username: str, email: str, password: str) -> str:
-        """Register a new user"""
-        # Hash the password before saving
-        hashed_password = self.password_context.hash(password)
-        user_id = self.user_service.register_user(username, email, hashed_password)
+        # hashed_password = self.password_context.hash(password)
+        user_id = self.user_service.register_user(username, email, password)
         return user_id
 
     def login_user(self, email: str, password: str) -> dict:
-        """Validate login and return user ID, username, and JWT"""
-        # Validate user credentials and retrieve user_id and username
         user_id, username = self.user_service.login_user(email, password)
+        tokens = self._generate_tokens()
+        return {"user_id": user_id, "username": username, "token": tokens}
 
-        # Generate JWT
-        token = self._generate_jwt(user_id)
-
-        return {"user_id": user_id, "username": username, "token": token}
-
-
-
-    def _generate_jwt(self, user_id: str) -> str:
-        """Generate JWT token"""
-        payload = {
-            "user_id": str(user_id),  # 转换 ObjectId 为字符串
-            "exp": datetime.now() + timedelta(hours=24)  # Token expiration time
-        }
-        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
-        return token
+    def _generate_tokens(self) -> str:
+        now = datetime.now()
+        refresh_token_payload = {'token': int((now + timedelta(days=7)).timestamp())}  # Refresh Token 有效期 7 天
+        refresh_token = jwt.encode(refresh_token_payload, self.secret_key, algorithm=self.algorithm)
+        logger.debug(f"refresh_token -> {refresh_token}")
+        return refresh_token
 
     def verify_token(self, token: str) -> str:
-        """Verify JWT token and return user_id"""
         try:
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
             return payload.get("user_id")
@@ -80,7 +73,6 @@ class AuthService:
 
             try:
                 user_id = self.verify_token(token)
-                # 将 user_id 存入 request.state 中
                 request.state.user_id = user_id
                 return await func(request, *args, **kwargs)
             except HTTPException as e:
