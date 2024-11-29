@@ -1,8 +1,8 @@
 import json
-from dotenv import load_dotenv
+from utils.env_loader import load_platform_specific_env
 import os
 from pinecone import Pinecone
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.vectorstores import Pinecone as PineconeVectorStore
 from langchain.chains.question_answering import load_qa_chain
 from langchain_groq import ChatGroq
@@ -68,7 +68,7 @@ def retrieve_answer(input_data):
     return parsed_output
 
 # Load environment variables
-load_dotenv()
+load_platform_specific_env()
 
 # Initialize Pinecone with API key
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
