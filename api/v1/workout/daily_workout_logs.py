@@ -59,7 +59,7 @@ async def create_or_update_workout_log(request: Request, body: CreateOrUpdateWor
     创建或更新用户某天的锻炼日志
     """
     user_id = request.state.user_id  # 从 request.state 获取 user_id
-    workout_log_date = body.log_date or log_date.today()  # 如果未提供日期，则使用今天的日期
+    workout_log_date = body.log_date or date.today()  # 如果未提供日期，则使用今天的日期
     logger.info(f"API: Creating or updating workout log for user_id {user_id} on log_date {workout_log_date}")
 
     try:

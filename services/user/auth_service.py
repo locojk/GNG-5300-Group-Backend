@@ -41,14 +41,17 @@ class AuthService:
 
     def login_user(self, email: str, password: str) -> dict:
         user_id, username = self.user_service.login_user(email, password)
-        tokens = self._generate_tokens()
+        tokens = self._generate_tokens(str(user_id))
         return {"user_id": user_id, "username": username, "token": tokens}
 
-    def _generate_tokens(self) -> str:
+    def _generate_tokens(self, user_id: str) -> str:
         now = datetime.now()
-        refresh_token_payload = {'token': int((now + timedelta(days=7)).timestamp())}  # Refresh Token 有效期 7 天
+        refresh_token_payload = {
+            'user_id': user_id,  # 包含 user_id
+            'exp': int((now + timedelta(days=7)).timestamp())  # Refresh Token 有效期 7 天
+        }
         refresh_token = jwt.encode(refresh_token_payload, self.secret_key, algorithm=self.algorithm)
-        logger.debug(f"refresh_token -> {refresh_token}")
+        logger.debug(f"Generated refresh_token -> {refresh_token}")
         return refresh_token
 
     def verify_token(self, token: str) -> str:
@@ -79,3 +82,9 @@ class AuthService:
                 return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
 
         return wrapper
+
+
+if __name__ == '__main__':
+    user_id = AuthService().verify_token(
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6MTczMzUyMDg3Mn0.aekSzrgOic0miyr_yNkVO8WxM5kn3kmOgltdL_skmCA')
+    print(f"user_id -> {user_id}")
