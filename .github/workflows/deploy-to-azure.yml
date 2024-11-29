@@ -1,0 +1,64 @@
+on:
+  push:
+    branches:
+      - main  # 在 `main` 分支有新的推送时触发
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Azure VM
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout 源代码
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 登录到 GitHub Container Registry (GHCR)
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      # 构建 Docker 镜像
+      - name: Build Docker Image
+        run: |
+          docker build --no-cache -t ghcr.io/wordiverse/fitness-app-docker:${{ github.sha }} .
+
+      # 推送 Docker 镜像到 GitHub Container Registry
+      - name: Push Docker Image to GitHub Container Registry
+        run: |
+          docker push ghcr.io/wordiverse/fitness-app-docker:${{ github.sha }}
+
+      # 设置 SSH 密钥
+      - name: Setup SSH Key
+        run: |
+          echo "${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}" > course-vm_key.pem
+          chmod 600 course-vm_key.pem
+
+      # 登录并部署到 Azure VM
+      - name: Login and Deploy to Azure VM
+        run: |
+          ssh -i course-vm_key.pem -o StrictHostKeyChecking=no ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_IP }} << 'EOF'
+            # 登录到 GitHub Container Registry
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # 拉取最新镜像
+            docker pull ghcr.io/wordiverse/fitness-app-docker:${{ github.sha }}
+
+            # 停止并删除旧容器
+            docker stop fitness-container || true
+            docker rm fitness-container || true
+
+            # 启动新容器，传递环境变量
+            docker run -d --name fitness-container \
+              -e GITHUB_SHA="${{ github.sha }}" \
+              -e ALGORITHM="${{ secrets.ALGORITHM }}" \
+              -e MONGO_URI="${{ secrets.MONGO_URI }}" \
+              -e SECRET_KEY="${{ secrets.SECRET_KEY }}" \
+              -e PINECONE_API_KEY="${{ secrets.PINECONE_API_KEY }}" \
+              -e GROQ_API_KEY="${{ secrets.GROQ_API_KEY }}" \
+              -e DEBUG="${{ secrets.DEBUG }}" \
+              -p 80:8000 ghcr.io/wordiverse/fitness-app-docker:${{ github.sha }}
+          EOF
+
+      # 清理 SSH 密钥
+      - name: Cleanup SSH Key
+        run: rm -f course-vm_key.pem

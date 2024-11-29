@@ -1,0 +1,14 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["user_id", "date", "workout_type", "duration"],
+    "properties": {
+      "user_id": { "bsonType": "objectId", "description": "Reference to the user's ID" },
+      "date": { "bsonType": "date", "description": "Date of the workout" },
+      "workout_type": { "bsonType": "string", "description": "Type of workout performed" },
+      "duration": { "bsonType": "int", "description": "Duration of the workout in minutes" },
+      "calories_burned": { "bsonType": "double", "description": "Calories burned during the workout" },
+      "notes": { "bsonType": "string", "description": "Optional notes about the workout" }
+    }
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["username", "status", "role", "email_verified", "created_at", "updated_at"],
+    "properties": {
+      "_id": {
+        "bsonType": "objectId"
+      },
+      "username": {
+        "bsonType": "string",
+        "description": "User's unique username, may be null for third-party logins"
+      },
+      "email": {
+        "bsonType": "string",
+        "pattern": "^.+@.+$",
+        "description": "User's email, may be null for third-party logins"
+      },
+      "password": {
+        "bsonType": "string",
+        "description": "Hashed password, only required for email-registered users"
+      },
+      "first_name": {
+        "bsonType": "string",
+        "description": "User's first name"
+      },
+      "last_name": {
+        "bsonType": "string",
+        "description": "User's last name"
+      },
+      "avatar": {
+        "bsonType": "object",
+        "properties": {
+          "file_id": {
+            "bsonType": "string",
+            "description": "ID or path to the user's avatar file"
+          },
+          "url": {
+            "bsonType": "string",
+            "description": "Public URL for accessing the user's avatar"
+          }
+        },
+        "description": "User's avatar information"
+      },
+      "status": {
+        "enum": ["active", "inactive", "banned", "deleted"],
+        "description": "User's status in the system"
+      },
+      "email_verified": {
+        "bsonType": "bool",
+        "description": "Whether the user's email has been verified"
+      },
+      "role": {
+        "enum": ["user", "admin", "moderator", "vip"],
+        "description": "User's role in the application"
+      },
+      "age": {
+        "bsonType": "int",
+        "minimum": 0,
+        "description": "User's age, optional but required for fitness features"
+      },
+      "weight_kg": {
+        "bsonType": "double",
+        "minimum": 0,
+        "description": "User's weight in kilograms"
+      },
+      "height_cm": {
+        "bsonType": "double",
+        "minimum": 0,
+        "description": "User's height in centimeters"
+      },
+      "password_reset_token": {
+        "bsonType": "string",
+        "description": "Token for password reset"
+      },
+      "password_reset_expires": {
+        "bsonType": "date",
+        "description": "Expiration date for the password reset token"
+      },
+      "last_login": {
+        "bsonType": "date",
+        "description": "Timestamp of the user's last login"
+      },
+      "failed_login_attempts": {
+        "bsonType": "int",
+        "minimum": 0,
+        "description": "Number of failed login attempts"
+      },
+      "last_failed_login": {
+        "bsonType": "date",
+        "description": "Timestamp of the last failed login attempt"
+      },
+      "created_at": {
+        "bsonType": "date",
+        "description": "Account creation timestamp"
+      },
+      "updated_at": {
+        "bsonType": "date",
+        "description": "Timestamp of the last update to the account"
+      }
+    }
+  }
+}

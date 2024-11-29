@@ -1,0 +1,49 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "user_id",
+      "log_date",
+      "workout_content",
+      "total_weight_lost",
+      "total_calories_burnt",
+      "avg_workout_duration",
+      "created_at"
+    ],
+    "properties": {
+      "user_id": {
+        "bsonType": "objectId",
+        "description": "Reference to the user's ID"
+      },
+      "log_date": {
+        "bsonType": "date",
+        "description": "Date of the workout log"
+      },
+      "workout_content": {
+        "bsonType": "string",
+        "description": "Details of the workout performed"
+      },
+      "total_weight_lost": {
+        "bsonType": "double",
+        "description": "Total weight lost in kilograms"
+      },
+      "total_calories_burnt": {
+        "bsonType": "double",
+        "description": "Total calories burnt in kcal"
+      },
+      "avg_workout_duration": {
+        "bsonType": "int",
+        "minimum": 1,
+        "description": "Average duration of a single workout session in minutes"
+      },
+      "created_at": {
+        "bsonType": "date",
+        "description": "Timestamp when the record was created"
+      },
+      "updated_at": {
+        "bsonType": "date",
+        "description": "Timestamp when the record was last updated"
+      }
+    }
+  }
+}

@@ -1,110 +1,83 @@
-"""
-User Authentication API
-
-@Date: 2024-10-20
-@Author: Adam Lyu
-"""
-
-from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Request, Depends
-from pydantic import ValidationError
+from fastapi import APIRouter, Body, Request, HTTPException
+from services.user.user_service import UserService
+from utils.logger import Logger
 from services.user.auth_service import AuthService
-from services.user.validation import RegistrationValidationSchema, LoginValidationSchema
-# from fastapi_mail import FastMail, MessageSchema
-from utils.logger import logger  # Assumes a logger utility is available
+from utils.decorators import handle_response
+from services.user.validation import RegistrationValidationSchema, LoginValidationSchema, UserProfileUpdateSchema
 
-# from utils.mail_config import mail_config  # Assumes FastMail configuration is here
-
+logger = Logger(__name__)
 router = APIRouter()
 auth_service = AuthService()
+user_service = UserService()
 
-# mail = FastMail(mail_config)
 
-# Asynchronous email sending
-# async def send_email(background_tasks: BackgroundTasks, msg: MessageSchema):
-#     background_tasks.add_task(mail.send_message, msg)
-
-# User registration API
+# 用户注册路由
 @router.post('/register')
-async def register(data: dict, background_tasks: BackgroundTasks):
+@handle_response
+async def register(data: dict = Body(...)):
     schema = RegistrationValidationSchema()
+    # 使用 marshmallow 验证数据
+    validated_data = schema.load(data)
 
-    try:
-        # Validate data
-        schema.load(data)
-        username = data['username']
-        email = data['email']
-        password = data['password']
+    # 从验证后的数据中获取字段
+    username = validated_data['username']
+    email = validated_data['email']
+    password = validated_data['password']
 
-        user_id = auth_service.register_user(username, email, password)
-        logger.info(f"User registered successfully: {user_id}")
-        return {"message": "Registration successful", "user_id": user_id}
-    except ValidationError as err:
-        logger.error(f"Validation error during registration: {err.messages}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err.messages)
-    except ValueError as e:
-        logger.error(f"Registration error: {str(e)}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    # 注册用户
+    user_id = auth_service.register_user(username, email, password)
+    logger.info(f"User registered successfully: {user_id}")
+    return {"message": "Registration successful", "user_id": user_id}
 
 
-# User login API
+# 用户登录路由
 @router.post('/login')
-async def login(data: dict):
+@handle_response
+async def login(data: dict = Body(...)):
     schema = LoginValidationSchema()
+    # 使用 marshmallow 验证数据
+    validated_data = schema.load(data)
 
-    try:
-        # Validate data
-        schema.load(data)
-        email = data['email']
-        password = data['password']
+    # 从验证后的数据中获取字段
+    email = validated_data['email']
+    password = validated_data['password']
 
-        result = auth_service.login_user(email, password)
-        logger.info(f"User logged in successfully: {result['user_id']}")
-        return {"message": "Login successful", "user_id": result['user_id'], "token": result['token']}
-    except ValidationError as err:
-        logger.error(f"Validation error during login: {err.messages}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err.messages)
-    except ValueError as e:
-        logger.error(f"Login error: {str(e)}")
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    # 用户登录
+    result = auth_service.login_user(email, password)
+    logger.info(f"User logged in successfully: {result['user_id']}")
+    return {"message": "Login successful", "user_id": result['user_id'], "username": result['username'], "token": result['token']}
 
 
-# Email verification API
-@router.post('/verify-email')
-async def verify_email(data: dict):
-    user_id = data.get('user_id')
-
-    if not user_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User ID is required")
-
-    try:
-        auth_service.user_service.verify_user_email(user_id)
-        logger.info(f"Email verified successfully for user_id: {user_id}")
-        return {"message": "Email verification successful"}
-    except ValueError as e:
-        logger.error(f"Email verification error: {str(e)}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+@router.get("/profile")
+@handle_response
+@auth_service.requires_auth
+async def get_user_profile(request: Request, user_id: str):
+    """
+    获取用户个人资料
+    """
+    user_info = user_service.get_user_info(user_id)
+    if not user_info:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "User profile fetched successfully", "data": user_info}
 
 
-# Password reset request API
-# @router.post('/request-reset-password')
-# async def request_reset_password(data: dict, background_tasks: BackgroundTasks):
-#     email = data.get('email')
-#
-#     if not email:
-#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required")
-#
-#     try:
-#         token = auth_service.user_service.request_password_reset(email)
-#         # Create FastAPI-Mail message
-#         msg = MessageSchema(
-#             subject="Password Reset Request",
-#             recipients=[email],
-#             body=f"Use this token to reset your password: {token}",
-#             subtype="plain"
-#         )
-#         await send_email(background_tasks, msg)
-#         logger.info(f"Password reset token sent to email: {email}")
-#         return {"message": "Password reset link has been sent to your email"}
-#     except ValueError as e:
-#         logger.error(f"Password reset error: {str(e)}")
-#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+@router.put("/profile/update")
+@handle_response
+@auth_service.requires_auth
+async def update_user_profile(request: Request):
+    """
+    更新用户个人资料
+    """
+    # 从 request.state 中获取 user_id
+    user_id = request.state.user_id
+
+    # 获取请求中的数据
+    data = await request.json()
+
+    # 验证数据
+    validated_data = UserProfileUpdateSchema(**data).dict(exclude_none=True)
+
+    # 更新用户信息
+    user_service.update_user_info(user_id, **validated_data)
+
+    return {"message": "User profile updated successfully"}

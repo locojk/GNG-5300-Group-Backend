@@ -33,12 +33,10 @@ def load_platform_specific_env():
 
     # Load environment-specific file based on OS and hostname
     if sys.platform == "darwin":  # macOS
-        env_file = os.path.join(project_root, "env_config/.env.dev")
+        env_file = os.path.join(project_root, "env_config/.env.prod")
+        # env_file = os.path.join(project_root, "env_config/.env.dev")
     elif sys.platform.startswith("linux"):  # Linux
-        if hostname == "fengwenlyu-OptiPlex-5050":
-            env_file = os.path.join(project_root, "env_config/.env.test")
-        else:
-            env_file = os.path.join(project_root, "env_config/.env.prod")
+        env_file = os.path.join(project_root, "env_config/.env.prod")
     else:
         raise EnvironmentError("Unsupported platform or hostname")
 
