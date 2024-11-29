@@ -16,10 +16,13 @@ class UserDAO:
         with self.db_client as db_client:
             logger.info(f"Setting up validation and index for collection: {self.collection_name}")
             db_client.ensure_validation(self.collection_name, 'users_schema.json')
-            db_client.db[self.collection_name].create_index(
-                [("email", pymongo.ASCENDING)], unique=True, name="email_1"
-            )
-
+            existing_indexes = db_client.db[self.collection_name].index_information()
+            if "email_1" not in existing_indexes:
+                db_client.db[self.collection_name].create_index(
+                    [("email", pymongo.ASCENDING)], unique=True, name="email_1"
+                )
+            else:
+                logger.info("Index 'email_1' already exists.")
     def get_user_by_username(self, username):
         """Retrieve user information by username"""
         logger.debug(f"Fetching user by username: {username}")
