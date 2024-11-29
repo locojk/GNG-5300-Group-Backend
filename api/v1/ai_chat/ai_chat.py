@@ -23,7 +23,7 @@ class ChatQueryRequest(BaseModel):
 
 # 路由实现
 
-@router.post("/ai_chat/query")
+@router.post("/query")
 @handle_response
 @auth_service.requires_auth
 async def query_ai_chat(request: Request, body: ChatQueryRequest):
@@ -47,7 +47,7 @@ async def query_ai_chat(request: Request, body: ChatQueryRequest):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get("/ai_chat/test")
+@router.get("/test")
 @auth_service.requires_auth
 async def test_ai_chat(request: Request):
     """

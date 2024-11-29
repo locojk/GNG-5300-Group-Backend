@@ -9,10 +9,15 @@ from langchain.vectorstores import Pinecone as PineconeVectorStore
 from langchain.chains.question_answering import load_qa_chain
 from langchain_groq import ChatGroq
 from langchain.output_parsers import StructuredOutputParser, ResponseSchema
-from utils.env_loader import load_platform_specific_env
+
+from daos.workout.fitness_goal_dao import FitnessGoalDAO
 from utils.logger import Logger
 from daos.user.users_dao import UserDAO
 
+from utils.env_loader import load_platform_specific_env
+
+# 加载环境变量
+load_platform_specific_env()
 logger = Logger(__name__)  # 初始化日志记录器
 
 
@@ -20,11 +25,6 @@ class AIChatService:
     def __init__(self):
         try:
             logger.info("Initializing AIChatService...")
-
-            # 加载环境变量
-            load_platform_specific_env()
-            logger.info("Environment variables loaded successfully.")
-
             # 初始化 Pinecone
             self.pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
             logger.info("Pinecone initialized successfully.")
@@ -72,6 +72,7 @@ class AIChatService:
 
             # 初始化 UserDAO
             self.user_dao = UserDAO()
+            self.fitness_goal_dao = FitnessGoalDAO()
 
         except Exception as e:
             logger.error(f"Error initializing AIChatService: {str(e)}")
@@ -123,23 +124,28 @@ class AIChatService:
             logger.info(f"Retrieving answer for user_id {user_id} and query '{query}'...")
 
             # 从用户信息表查询用户详情
-            user_info = self.user_dao.get_user_info(user_id)
+            user_info = self.user_dao.get_user_by_id(user_id)
+            goal_info = self.fitness_goal_dao.get_goal_by_user_id(user_id)
+            logger.debug(f"user_info -> {user_info}")
+            logger.debug(f"goal_info -> {goal_info}")
+
             if not user_info:
                 raise ValueError(f"User with ID {user_id} not found.")
 
             # 整合用户信息和查询内容
             input_data = {
                 "query": query,
-                "Sex": user_info.get("sex"),
+                "Sex": user_info.get("gender"),
                 "Age": user_info.get("age"),
-                "Height": user_info.get("height"),
-                "Weight": user_info.get("weight"),
-                "Hypertension": user_info.get("hypertension"),
-                "Diabetes": user_info.get("diabetes"),
-                "BMI": user_info.get("bmi"),
-                "Level": user_info.get("fitness_level", "Beginner"),
-                "Fitness_Goal": user_info.get("fitness_goal", "General Fitness"),
-                "Fitness_Type": user_info.get("fitness_type", "Any"),
+                "Height": user_info.get("height_cm"),
+                "Weight": user_info.get("weight_kg"),
+                "DaysPerWeek": user_info.get("days_per_week", "Beginner"),
+                "Fitness_Goal": goal_info.get("goal", "General Fitness"),
+                "WorkoutDuration": user_info.get("workout_duration", "Any"),
+                "RestDay": user_info.get("rest_days", "Any"),
+                # "Hypertension": user_info.get("hypertension"),
+                # "Diabetes": user_info.get("diabetes"),
+                # "BMI": user_info.get("bmi"),
             }
 
             # 检索匹配文档
@@ -175,7 +181,7 @@ if __name__ == "__main__":
     logger.info("AIChatService initialized for testing.")
 
     # 定义测试用户 ID 和查询
-    test_user_id = 123  # 替换为测试用户的 ID
+    test_user_id = '6741f0e75b6291baa9b7a273'  # 替换为测试用户的 ID
     test_query = "What is the best exercise for weight loss?"
 
     try:
