@@ -55,18 +55,6 @@ class AIChatService:
             self.chain = load_qa_chain(llm=self.llm, chain_type='stuff')
             logger.info("Retrieval QA chain created successfully.")
 
-            # 初始化响应结构
-            # self.response_schemas = [
-            #     ResponseSchema(name="Workout Name", description="Name of the workout"),
-            #     ResponseSchema(name="Duration", description="Duration of the workout in minutes"),
-            #     ResponseSchema(name="Difficulty", description="Difficulty level of the workout"),
-            #     ResponseSchema(name="Exercises", description="List of exercises included in the workout, with instructions for each exercise"),
-            #     ResponseSchema(name="Estimated Calories Burned", description="Estimated calories burned during the workout"),
-            #     ResponseSchema(name="Equipment Needed", description="List of equipment needed for the workout"),
-            #     ResponseSchema(name="Additional Tips", description="Any additional tips for the user"),
-            #     ResponseSchema(name="Total Calories Burned", description="Total calories burned for the entire workout plan")
-            # ]
-            
             self.response_schemas = [
                 ResponseSchema(name="Workout Name", description="Name of the workout"),
                 ResponseSchema(name="Duration", description="Duration of the workout in minutes"),
@@ -80,16 +68,19 @@ class AIChatService:
                             "type": "object",
                             "properties": {
                                 "Name": {"type": "string", "description": "Name of the exercise"},
-                                "Instructions": {"type": "string", "description": "Step-by-step instructions for performing the exercise"}
+                                "Instructions": {"type": "string",
+                                                 "description": "Step-by-step instructions for performing the exercise"}
                             },
                             "required": ["Name", "Instructions"]
                         }
                     }
                 ),
-                ResponseSchema(name="Estimated Calories Burned", description="Estimated calories burned during the workout, only give me a number, no anything else, no range"),
+                ResponseSchema(name="Estimated Calories Burned",
+                               description="Estimated calories burned during the workout, only give me a number, no anything else, no range"),
                 ResponseSchema(name="Equipment Needed", description="List of equipment needed for the workout"),
                 ResponseSchema(name="Additional Tips", description="Any additional tips for the user"),
-                ResponseSchema(name="Total Calories Burned", description="Total calories burned for the entire workout plan")
+                ResponseSchema(name="Total Calories Burned",
+                               description="Total calories burned for the entire workout plan")
             ]
             self.parser = StructuredOutputParser.from_response_schemas(self.response_schemas)
             self.format_instructions = self.parser.get_format_instructions()
@@ -223,40 +214,3 @@ if __name__ == "__main__":
 
     except Exception as e:
         logger.error(f"Test failed with error: {str(e)}")
-
-# if __name__ == "__main__":
-#     import json
-#
-#     # 初始化服务
-#     service = AIChatService()
-#     logger.info("AIChatService initialized for testing.")
-#
-#     # 定义测试输入
-#     test_input = {
-#         "query": "What is the best exercise for weight loss?",
-#         "Sex": "Female",
-#         "Age": 30,
-#         "Height": 165,
-#         "Weight": 70,
-#         "Hypertension": False,
-#         "Diabetes": False,
-#         "BMI": 25.7,
-#         "Level": "Intermediate",
-#         "Fitness Goal": "Weight Loss",
-#         "Fitness Type": "Cardio"
-#     }
-#
-#     try:
-#         # 调用服务生成回答
-#         logger.info("Testing retrieve_answer with sample input...")
-#         response = service.retrieve_answer(test_input)
-#
-#         # 打印测试输出
-#         print("\nTest Input:")
-#         print(json.dumps(test_input, indent=4))
-#         print("\nTest Output:")
-#         print(json.dumps(response, indent=4))
-#         logger.info("Test completed successfully.")
-#
-#     except Exception as e:
-#         logger.error(f"Test failed with error: {str(e)}")
