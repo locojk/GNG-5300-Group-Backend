@@ -14,12 +14,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 复制项目文件
 COPY . /app/
 
-# 明确复制 env_config 文件夹（包含环境配置文件）
-COPY env_config /app/env_config
-
-# 设置环境变量目录（如果需要）
-ENV ENV_CONFIG_DIR=/app/env_config
-
 # 暴露端口
 EXPOSE 8000
 
