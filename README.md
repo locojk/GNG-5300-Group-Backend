@@ -73,6 +73,9 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
 
 
 ## jenkins docker
+docker build -t fitness-app .
+docker run -d -p 80:8000 fitness-app
+
 
 
 

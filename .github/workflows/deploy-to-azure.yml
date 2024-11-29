@@ -1,0 +1,52 @@
+name: Deploy to Azure VM
+
+on:
+  push:
+    branches:
+      - main  # 在 `main` 分支有新的推送时触发
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Azure VM
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout 源代码
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 登录到 Docker Hub
+      - name: Log in to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }} # Docker Hub 用户名
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }} # Docker Hub 密码
+        run: echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+
+      # 构建 Docker 镜像
+      - name: Build Docker image
+        run: |
+          docker build -t ${DOCKER_USERNAME}/fastapi-app:latest .
+
+      # 推送镜像到 Docker Hub
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push ${DOCKER_USERNAME}/fastapi-app:latest
+
+      # 部署到 Azure VM
+      - name: Deploy to Azure VM
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.AZURE_VM_IP }}             # Azure VM 公网 IP
+          username: ${{ secrets.AZURE_VM_USER }}       # Azure VM 用户名
+          key: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }} # SSH 私钥
+          port: 22
+          script: |
+            # 拉取最新的 Docker 镜像
+            docker pull ${DOCKER_USERNAME}/fastapi-app:latest
+
+            # 停止并移除旧容器（如果存在）
+            docker stop fastapi-container || true
+            docker rm fastapi-container || true
+
+            # 启动新容器
+            docker run -d --name fastapi-container -p 80:8000 ${DOCKER_USERNAME}/fastapi-app:latest
