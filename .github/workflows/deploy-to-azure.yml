@@ -25,12 +25,12 @@ jobs:
       # 构建 Docker 镜像
       - name: Build Docker image
         run: |
-          docker build -t ${DOCKER_USERNAME}/fastapi-app:latest .
+          docker build -t ${DOCKER_USERNAME}/fitness-app:latest .
 
       # 推送镜像到 Docker Hub
       - name: Push Docker image to Docker Hub
         run: |
-          docker push ${DOCKER_USERNAME}/fastapi-app:latest
+          docker push ${DOCKER_USERNAME}/fitness-app:latest
 
       # 部署到 Azure VM
       - name: Deploy to Azure VM
@@ -42,11 +42,11 @@ jobs:
           port: 22
           script: |
             # 拉取最新的 Docker 镜像
-            docker pull ${DOCKER_USERNAME}/fastapi-app:latest
+            docker pull ${DOCKER_USERNAME}/fitness-app:latest
 
             # 停止并移除旧容器（如果存在）
-            docker stop fastapi-container || true
-            docker rm fastapi-container || true
+            docker stop fitness-container || true
+            docker rm fitness-container || true
 
             # 启动新容器
-            docker run -d --name fastapi-container -p 80:8000 ${DOCKER_USERNAME}/fastapi-app:latest
+            docker run -d --name fastapi-container -p 80:8000 ${DOCKER_USERNAME}/fitness-app:latest
