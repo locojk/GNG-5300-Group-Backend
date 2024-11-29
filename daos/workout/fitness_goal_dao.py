@@ -129,7 +129,7 @@ if __name__ == "__main__":
 
     # 创建或更新健身目标
     result = dao.create_or_update_fitness_goal(
-        user_id="6482a3e28d142e1bdca0c7b9",
+        user_id="674a15955311e41c60aefd23",
         goal="strength",
         days_per_week=5,
         workout_duration=60,
@@ -137,13 +137,13 @@ if __name__ == "__main__":
     )
     print(f"Operation result: {result}")
 
-    # 查询健身目标
-    goal = dao.get_goal_by_user_id("6482a3e28d142e1bdca0c7b9")
-    print(f"Retrieved goal: {goal}")
-
-    # 更新健身目标的部分字段
-    updated_result = dao.update_fitness_goal(
-        user_id="6482a3e28d142e1bdca0c7b9",
-        update_fields={"days_per_week": 6}
-    )
-    print(f"Update result: {updated_result}")
+    # # 查询健身目标
+    # goal = dao.get_goal_by_user_id("674a15955311e41c60aefd23")
+    # print(f"Retrieved goal: {goal}")
+    #
+    # # 更新健身目标的部分字段
+    # updated_result = dao.update_fitness_goal(
+    #     user_id="674a15955311e41c60aefd23",
+    #     update_fields={"days_per_week": 6}
+    # )
+    # print(f"Update result: {updated_result}")

@@ -1,13 +1,13 @@
+import os
 from datetime import time
-
 from daos.user.users_dao import UserDAO
-from flask_bcrypt import Bcrypt
+import bcrypt
 from utils.auth_helpers import generate_reset_token
 from utils.email_helpers import send_reset_email
 from utils.logger import Logger
-
+from utils.env_loader import load_platform_specific_env
+load_platform_specific_env()
 logger = Logger(__name__)
-bcrypt = Bcrypt()
 
 
 class UserService:
@@ -19,28 +19,39 @@ class UserService:
         if self.user_dao.get_user_by_email(email):
             raise ValueError("Email already exists")
 
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        logger.debug(f"Generated Hashed Password: {hashed_password}")
+        # 打印原始密码明文和编码后的密码
+        logger.debug(f"Register - Plain Password: {password}")
+        logger.debug(f"Register - Encoded Password: {password.encode('utf-8')}")
+
+        # 生成哈希密码并打印
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        logger.debug(f"Register - Generated Hashed Password: {hashed_password}")
+
+        # 存储到数据库
         user_id = self.user_dao.insert_user(username, email, hashed_password)
         return user_id
 
     # User login with email and password
     def login_user(self, email, password):
         user = self.user_dao.get_user_by_email(email)
-        logger.debug(f"user -> {user}")
-        logger.debug(f"Stored Hash: {user['password']}")
-        logger.debug(f"Password to Check: {password}")
+        if not user:
+            raise ValueError("Incorrect email or password")
 
-        try:
-            if user and bcrypt.check_password_hash(user['password'], password):
-                self.user_dao.update_last_login(user['_id'])
-                return user['_id'], user.get('username')  # Return user_id and username
-        except ValueError as e:
-            logger.error(f"Error during password check: {e}")
-            raise
+        # 打印用户输入的明文密码和编码后的密码
+        logger.debug(f"Login - Plain Password: {password}")
+        logger.debug(f"Login - Encoded Password: {password.encode('utf-8')}")
 
-        raise ValueError("Incorrect email or password")
+        # 打印数据库中存储的哈希密码
+        logger.debug(f"Login - Stored Hashed Password: {user['password']}")
 
+        # 验证密码并打印结果
+        if bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+            logger.debug("Login - Password match successful")
+            self.user_dao.update_last_login(user['_id'])  # 更新最后登录时间
+            return user['_id'], user.get('username')  # 返回用户 ID 和用户名
+        else:
+            logger.warning("Login - Password mismatch")
+            raise ValueError("Incorrect email or password")
 
     # Update user information
     def update_user_info(self, user_id, **kwargs):

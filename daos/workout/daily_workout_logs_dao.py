@@ -85,11 +85,11 @@ class DailyWorkoutLogsDAO:
             else:
                 # 创建新日志
                 log_data["created_at"] = datetime.now()
-                result = db_client.insert_one(self.collection_name, log_data)
+                inserted_id = db_client.insert_one(self.collection_name, log_data)
                 # 返回可序列化的数据
                 return {
                     "operation": "create",
-                    "inserted_id": str(result.inserted_id)
+                    "inserted_id": str(inserted_id)
                 }
 
     def update_log_fields(self, user_id, log_date, update_fields):
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     # Insert multiple test logs for user 6741f0e75b6291baa9b7a273
     test_logs = [
         {
-            "user_id": "6741f0e75b6291baa9b7a273",
+            "user_id": "674a15955311e41c60aefd23",
             "log_date": datetime(2024, 11, 25),
             "workout_content": "Running and Yoga",
             "total_weight_lost": 0.2,
@@ -217,7 +217,7 @@ if __name__ == "__main__":
             "avg_workout_duration": 45
         },
         {
-            "user_id": "6741f0e75b6291baa9b7a273",
+            "user_id": "674a15955311e41c60aefd23",
             "log_date": datetime(2024, 11, 26),
             "workout_content": "Strength Training",
             "total_weight_lost": 0.3,
@@ -225,7 +225,7 @@ if __name__ == "__main__":
             "avg_workout_duration": 50
         },
         {
-            "user_id": "6741f0e75b6291baa9b7a273",
+            "user_id": "674a15955311e41c60aefd23",
             "log_date": datetime(2024, 11, 27),
             "workout_content": "Cycling",
             "total_weight_lost": 0.1,
@@ -233,7 +233,7 @@ if __name__ == "__main__":
             "avg_workout_duration": 40
         },
         {
-            "user_id": "6741f0e75b6291baa9b7a273",
+            "user_id": "674a15955311e41c60aefd23",
             "log_date": datetime(2024, 11, 28),
             "workout_content": "Swimming",
             "total_weight_lost": 0.4,
