@@ -34,12 +34,13 @@ class UserService:
         try:
             if user and bcrypt.check_password_hash(user['password'], password):
                 self.user_dao.update_last_login(user['_id'])
-                return user['_id']
+                return user['_id'], user.get('username')  # Return user_id and username
         except ValueError as e:
             logger.error(f"Error during password check: {e}")
             raise
 
         raise ValueError("Incorrect email or password")
+
 
     # Update user information
     def update_user_info(self, user_id, **kwargs):
