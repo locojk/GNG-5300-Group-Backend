@@ -86,7 +86,7 @@ class AIChatService:
                         }
                     }
                 ),
-                ResponseSchema(name="Estimated Calories Burned", description="Estimated calories burned during the workout"),
+                ResponseSchema(name="Estimated Calories Burned", description="Estimated calories burned during the workout, only give me a number, no anything else, no range"),
                 ResponseSchema(name="Equipment Needed", description="List of equipment needed for the workout"),
                 ResponseSchema(name="Additional Tips", description="Any additional tips for the user"),
                 ResponseSchema(name="Total Calories Burned", description="Total calories burned for the entire workout plan")
