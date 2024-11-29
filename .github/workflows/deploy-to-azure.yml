@@ -29,7 +29,7 @@ jobs:
 
       - name: Setup SSH Key
         run: |
-          echo "${{ secrets.COURSE_VM_PRIVATE_KEY }}" > course-vm_key.pem
+          echo "${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}" > course-vm_key.pem
           chmod 600 course-vm_key.pem
 
       - name: Login and Deploy to Azure VM
