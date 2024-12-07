@@ -7,7 +7,7 @@ app = FastAPI()
 # CORS configuration
 origins = [
     "http://localhost:3000",  # Frontend development URL
-    # Add additional origins as needed, e.g., your production frontend URL
+    "http://gng-5300-group-frontend-b2bzeef2arg4b6fu.canadacentral-01.azurewebsites.net",
 ]
 
 app.add_middleware(
