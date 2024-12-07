@@ -46,6 +46,10 @@ jobs:
             # 停止并删除旧容器
             docker stop fitness-container || true
             docker rm fitness-container || true
+          
+                      # 删除旧镜像（保留最新镜像）
+            docker images --filter "dangling=true" -q | xargs -r docker rmi
+            docker images ghcr.io/wordiverse/fitness-app-docker --filter "before=ghcr.io/wordiverse/fitness-app-docker:${{ github.sha }}" -q | xargs -r docker rmi
 
             # 启动新容器，传递环境变量
             docker run -d --name fitness-container \
