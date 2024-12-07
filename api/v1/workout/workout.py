@@ -37,37 +37,12 @@ async def get_fitness_goal(request: Request):
 @auth_service.requires_auth
 async def create_or_update_fitness_goal(request: Request, body: CreateOrUpdateGoalRequest):
     """
-    创建或更新用户的健身目标
+    create fitness goal
     """
-    user_id = request.state.user_id  # 从 request.state 获取 user_id
-    # try:
-    # 直接将模型转为字典，并传递给服务层
+    user_id = request.state.user_id  # from request.state get user_id
     result = service.create_or_update_fitness_goal(user_id=user_id, data=body.dict(exclude_unset=True))
     return {"status": "success", "message": result["message"], "data": result["data"]}
 
-
-# @router.patch("/fitness_goal")
-# @handle_response
-# @auth_service.requires_auth
-# async def update_fitness_goal_fields(request: Request, body: CreateOrUpdateGoalRequest):
-#     """
-#     动态更新用户健身目标的部分字段
-#     """
-#     user_id = request.state.user_id  # 从 request.state 获取 user_id
-#     try:
-#         update_data = body.dict(exclude_unset=True)
-#         if not update_data:
-#             raise HTTPException(status_code=400, detail="No fields to update provided")
-#         result = service.update_fitness_goal_fields(user_id, update_data)
-#         if not result["matched_count"]:
-#             raise HTTPException(status_code=404, detail="Fitness goal not found for update")
-#         return {"status": "success", "message": result["message"], "data": result["data"]}
-#     except ValueError as ve:
-#         logger.warning(f"Validation error for user_id {user_id}: {ve}")
-#         raise HTTPException(status_code=400, detail=str(ve))
-#     except Exception as e:
-#         logger.error(f"Error updating fitness goal for user_id {user_id}: {e}")
-#         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.patch("/fitness_goal")
 @handle_response
@@ -105,4 +80,3 @@ async def update_fitness_goal_fields(request: Request, body: CreateOrUpdateGoalR
     except Exception as e:
         logger.error(f"Error updating fitness goal for user_id {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
-

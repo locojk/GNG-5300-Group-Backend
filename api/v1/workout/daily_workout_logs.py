@@ -41,9 +41,9 @@ class UpdateWorkoutLogFieldsRequest(BaseModel):
 @auth_service.requires_auth
 async def get_workout_log(request: Request, log_date: str):
     """
-    获取用户某天的锻炼日志
+    get user workout log
     """
-    user_id = request.state.user_id  # 从 request.state 获取 user_id
+    user_id = request.state.user_id  # from request.state get user_id
     logger.info(f"API: Fetching workout log for user_id {user_id} on log_date {log_date}")
     log = service.get_workout_log(user_id, log_date)
     if not log:
