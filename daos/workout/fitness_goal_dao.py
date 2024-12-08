@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 from daos.mongodb_client import MongoDBClient
 from utils.logger import Logger
 
-# 初始化日志记录器
+# Initialize logger
 logger = Logger(__name__)
 
 
@@ -18,12 +18,12 @@ class FitnessGoalDAO:
         self.db_client = MongoDBClient()
         self.collection_name = 'fitness_goals'
 
-        # 应用 JSON Schema 验证规则并创建索引
+        # Apply JSON Schema validation rules and create indexes
         with self.db_client as db_client:
             logger.info(f"Initializing validation and index for collection: {self.collection_name}")
             db_client.ensure_validation(self.collection_name, 'fitness_goals_schema.json')
             db_client.db[self.collection_name].create_index(
-                [("user_id", pymongo.ASCENDING)], unique=True  # 确保每个用户只能有一个目标
+                [("user_id", pymongo.ASCENDING)], unique=True  # Ensure each user can only have one goal
             )
 
     def get_goal_by_user_id(self, user_id, db_client=None):
@@ -53,10 +53,10 @@ class FitnessGoalDAO:
                 "updated_at": datetime.utcnow()
             }
 
-            # 传递已经打开的 db_client
+            # Check for existing goal
             existing_goal = self.get_goal_by_user_id(user_id, db_client)
             if existing_goal:
-                # 更新已有目标
+                # Update existing goal
                 result = db_client.update_one(
                     self.collection_name,
                     {"user_id": ObjectId(user_id)},
@@ -71,7 +71,7 @@ class FitnessGoalDAO:
                 )
                 return {"operation": "update", "result": result}
             else:
-                # 创建新目标
+                # Create new goal
                 goal_data["created_at"] = datetime.now()
                 inserted_id = db_client.insert_one(self.collection_name, goal_data)
                 logger.audit_log(
@@ -90,7 +90,7 @@ class FitnessGoalDAO:
             logger.error("update_fields must be a non-empty dictionary")
             raise ValueError("update_fields must be a non-empty dictionary")
 
-        # Add the `updated_at` timestamp automatically
+        # Automatically add the `updated_at` timestamp
         update_fields["updated_at"] = datetime.utcnow()
 
         query = {"user_id": ObjectId(user_id)}
@@ -124,10 +124,10 @@ class FitnessGoalDAO:
 
 
 if __name__ == "__main__":
-    # 示例用法
+    # Example usage
     dao = FitnessGoalDAO()
 
-    # 创建或更新健身目标
+    # Create or update a fitness goal
     result = dao.create_or_update_fitness_goal(
         user_id="674a21ac406725261a1ad15f",
         goal="strength",
@@ -137,13 +137,15 @@ if __name__ == "__main__":
     )
     print(f"Operation result: {result}")
 
-    # # 查询健身目标
+    # Uncomment below for additional operations
+    # Retrieve a fitness goal
     # goal = dao.get_goal_by_user_id("674a15955311e41c60aefd23")
     # print(f"Retrieved goal: {goal}")
-    #
-    # # 更新健身目标的部分字段
+
+    # Update specific fields of a fitness goal
     # updated_result = dao.update_fitness_goal(
     #     user_id="674a15955311e41c60aefd23",
     #     update_fields={"days_per_week": 6}
     # )
     # print(f"Update result: {updated_result}")
+

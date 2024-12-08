@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - main  # 在 `main` 分支有新的推送时触发
+      - main  # Triggered when there is a new push to the `main` branch
 
 jobs:
   build-and-deploy:
@@ -9,49 +9,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout 源代码
+      # Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 登录到 GitHub Container Registry (GHCR)
+      # login GitHub Container Registry (GHCR)
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      # 构建 Docker 镜像
+      # build Docker image
       - name: Build Docker Image
         run: |
           docker build --no-cache -t ghcr.io/wordiverse/fitness-app-docker:${{ github.sha }} .
 
-      # 推送 Docker 镜像到 GitHub Container Registry
+      # push Docker image to GitHub Container Registry
       - name: Push Docker Image to GitHub Container Registry
         run: |
           docker push ghcr.io/wordiverse/fitness-app-docker:${{ github.sha }}
 
-      # 设置 SSH 密钥
+      # set SSH key
       - name: Setup SSH Key
         run: |
           echo "${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}" > course-vm_key.pem
           chmod 600 course-vm_key.pem
 
-      # 登录并部署到 Azure VM
+      # login and deploy Azure VM
       - name: Login and Deploy to Azure VM
         run: |
           ssh -i course-vm_key.pem -o StrictHostKeyChecking=no ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_IP }} << 'EOF'
             # 登录到 GitHub Container Registry
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # 拉取最新镜像
+            # pull latest image
             docker pull ghcr.io/wordiverse/fitness-app-docker:${{ github.sha }}
 
-            # 停止并删除旧容器
+            # stop and delete image
             docker stop fitness-container || true
             docker rm fitness-container || true
           
-                      # 删除旧镜像（保留最新镜像）
+            # Delete old image (keep latest image)
             docker images --filter "dangling=true" -q | xargs -r docker rmi
             docker images ghcr.io/wordiverse/fitness-app-docker --filter "before=ghcr.io/wordiverse/fitness-app-docker:${{ github.sha }}" -q | xargs -r docker rmi
 
-            # 启动新容器，传递环境变量
+            # Start a new container and pass environment variables
             docker run -d --name fitness-container \
               -e GITHUB_SHA="${{ github.sha }}" \
               -e ALGORITHM="${{ secrets.ALGORITHM }}" \
@@ -63,6 +63,6 @@ jobs:
               -p 80:8000 ghcr.io/wordiverse/fitness-app-docker:${{ github.sha }}
           EOF
 
-      # 清理 SSH 密钥
+      # Clean SSH keys
       - name: Cleanup SSH Key
         run: rm -f course-vm_key.pem

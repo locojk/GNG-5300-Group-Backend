@@ -33,7 +33,7 @@ class MongoDBClient:
                 logger.info(f"Connecting to MongoDB: URI={self.uri}, DB_NAME={self.db_name}")
                 self.client = MongoClient(self.uri, tlsAllowInvalidCertificates=True)
                 self.db = self.client[self.db_name]
-                self.client.admin.command('ping')  # 测试连接
+                self.client.admin.command('ping')
                 logger.info(f"Successfully connected to MongoDB database: {self.db_name}")
             except Exception as e:
                 logger.error(f"Failed to connect to MongoDB: {str(e)}")
@@ -114,7 +114,7 @@ class MongoDBClient:
         """
         Insert a single document into a collection with optional schema validation.
         """
-        if self.db is None:  # 显式比较 None
+        if self.db is None:
             raise RuntimeError("Database connection is not initialized. Did you forget to use the context manager?")
 
         if schema:
@@ -134,9 +134,7 @@ class MongoDBClient:
         if not isinstance(update, dict):
             raise ValueError("Update data must be a dictionary.")
 
-        # 检查更新文档中是否已经包含 `$set`
         if "$set" in update and isinstance(update["$set"], dict):
-            # 可能是重复封装，直接返回错误
             for key in update["$set"]:
                 if key.startswith("$"):
                     raise ValueError(f"Illegal field name in update_data: {key}")

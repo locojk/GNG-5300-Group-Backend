@@ -2,18 +2,13 @@
 @Time ： 2024-11-28
 @Auth ： Adam Lyu
 """
-"""
-@Time ： 2024-11-23
-@Auth ： Adam Lyu
-"""
 from datetime import datetime, date
 import pymongo
 from bson.objectid import ObjectId
 from daos.mongodb_client import MongoDBClient
-from pymongo.results import UpdateResult, InsertOneResult
 from utils.logger import Logger
 
-# 初始化日志记录器
+# Initialize logger
 logger = Logger(__name__)
 
 
@@ -22,13 +17,13 @@ class DailyWorkoutLogsDAO:
         self.db_client = MongoDBClient()
         self.collection_name = 'daily_workout_logs'
 
-        # 应用 JSON Schema 验证规则并创建索引
+        # Apply JSON Schema validation rules and create indexes
         with self.db_client as db_client:
             logger.info(f"Initializing validation and index for collection: {self.collection_name}")
             db_client.ensure_validation(self.collection_name, 'daily_workout_logs_schema.json')
             db_client.db[self.collection_name].create_index(
                 [("user_id", pymongo.ASCENDING), ("log_date", pymongo.ASCENDING)],
-                unique=True  # 每个用户每天只能有一条记录
+                unique=True  # Ensure each user has only one log per day
             )
 
     def get_log_by_user_and_date(self, user_id, log_date, db_client=None):
@@ -51,7 +46,7 @@ class DailyWorkoutLogsDAO:
         """Create or update a workout log for a user."""
         logger.info(f"Creating or updating workout log for user_id: {user_id}, log_date: {log_date}")
 
-        # 将 log_date 转换为 datetime
+        # Convert log_date to datetime
         if isinstance(log_date, date):
             log_date = datetime.combine(log_date, datetime.min.time())
 
@@ -66,16 +61,15 @@ class DailyWorkoutLogsDAO:
                 "updated_at": datetime.utcnow()
             }
 
-            # 检查是否已有日志
+            # Check if the log already exists
             existing_log = self.get_log_by_user_and_date(user_id, log_date, db_client)
             if existing_log:
-                # 更新已有日志
+                # Update the existing log
                 result = db_client.update_one(
                     self.collection_name,
                     {"user_id": ObjectId(user_id), "log_date": log_date},
                     {"$set": log_data}
                 )
-                # 返回可序列化的数据
                 return {
                     "operation": "update",
                     "matched_count": result.matched_count,
@@ -83,10 +77,9 @@ class DailyWorkoutLogsDAO:
                     "upserted_id": str(result.upserted_id) if result.upserted_id else None
                 }
             else:
-                # 创建新日志
+                # Create a new log
                 log_data["created_at"] = datetime.now()
                 inserted_id = db_client.insert_one(self.collection_name, log_data)
-                # 返回可序列化的数据
                 return {
                     "operation": "create",
                     "inserted_id": str(inserted_id)
@@ -99,7 +92,7 @@ class DailyWorkoutLogsDAO:
             logger.error("update_fields must be a non-empty dictionary")
             raise ValueError("update_fields must be a non-empty dictionary")
 
-        # Add the `updated_at` timestamp automatically
+        # Automatically add the `updated_at` timestamp
         update_fields["updated_at"] = datetime.utcnow()
 
         query = {"user_id": ObjectId(user_id), "log_date": log_date}
@@ -132,15 +125,12 @@ class DailyWorkoutLogsDAO:
             }
 
     def calculate_total_progress(self, user_id):
-        """
-        Calculate overall progress for a user.
-        """
+        """Calculate overall progress for a user."""
         logger.info(f"Calculating total progress for user_id: {user_id}")
         query = {"user_id": ObjectId(user_id), "is_deleted": False}
 
         try:
             with self.db_client as db_client:
-                # 聚合总数据
                 pipeline = [
                     {"$match": query},
                     {
@@ -149,7 +139,7 @@ class DailyWorkoutLogsDAO:
                             "total_weight_lost": {"$sum": "$total_weight_lost"},
                             "total_calories_burnt": {"$sum": "$total_calories_burnt"},
                             "total_duration": {"$sum": "$avg_workout_duration"},
-                            "total_sessions": {"$sum": 1},  # 总的锻炼次数
+                            "total_sessions": {"$sum": 1}
                         }
                     }
                 ]
@@ -175,32 +165,6 @@ class DailyWorkoutLogsDAO:
             logger.error(f"Failed to calculate total progress for user_id {user_id}: {e}")
             raise
 
-    def calculate_daily_progress(self, user_id):
-        """
-        Calculate daily workout progress for a user based on all workout logs.
-        """
-        logger.info(f"Calculating daily workout progress for user_id: {user_id}")
-        query = {"user_id": ObjectId(user_id), "is_deleted": False}
-
-        try:
-            with self.db_client as db_client:
-                pipeline = [
-                    {"$match": query},
-                    {
-                        "$group": {
-                            "_id": {"log_date": "$log_date"},  # 按日期分组
-                            "total_workout_time": {"$sum": "$avg_workout_duration"},  # 按天总锻炼时间
-                            "total_calories_burnt": {"$sum": "$total_calories_burnt"}  # 按天总卡路里
-                        }
-                    },
-                    {"$sort": {"_id.log_date": 1}}  # 按日期升序排序
-                ]
-                daily_results = list(db_client.db[self.collection_name].aggregate(pipeline))
-                logger.debug(f"Daily progress results: {daily_results}")
-                return daily_results
-        except Exception as e:
-            logger.error(f"Failed to calculate daily workout progress for user_id {user_id}: {e}")
-            raise
 
 
 if __name__ == "__main__":

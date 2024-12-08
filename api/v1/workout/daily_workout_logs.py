@@ -17,10 +17,10 @@ service = DailyWorkoutLogsService()
 auth_service = AuthService()
 
 
-# 请求体定义
+# Request body definitions
 
 class CreateOrUpdateWorkoutLogRequest(BaseModel):
-    log_date: date = Field(default_factory=date.today)  # 使用明确的字段名
+    log_date: date = Field(default_factory=date.today)  # Use an explicit field name
     workout_content: str
     total_weight_lost: float
     total_calories_burnt: float
@@ -34,16 +34,16 @@ class UpdateWorkoutLogFieldsRequest(BaseModel):
     workout_content: str = None
 
 
-# 路由实现
+# Route implementations
 
 @router.get("/workout_logs")
 @handle_response
 @auth_service.requires_auth
 async def get_workout_log(request: Request, log_date: str):
     """
-    get user workout log
+    Retrieve a user's workout log for a specific date.
     """
-    user_id = request.state.user_id  # from request.state get user_id
+    user_id = request.state.user_id  # Retrieve user_id from request.state
     logger.info(f"API: Fetching workout log for user_id {user_id} on log_date {log_date}")
     log = service.get_workout_log(user_id, log_date)
     if not log:
@@ -56,10 +56,10 @@ async def get_workout_log(request: Request, log_date: str):
 @auth_service.requires_auth
 async def create_or_update_workout_log(request: Request, body: CreateOrUpdateWorkoutLogRequest):
     """
-    创建或更新用户某天的锻炼日志
+    Create or update a workout log for a specific date.
     """
-    user_id = request.state.user_id  # 从 request.state 获取 user_id
-    workout_log_date = body.log_date or date.today()  # 如果未提供日期，则使用今天的日期
+    user_id = request.state.user_id  # Retrieve user_id from request.state
+    workout_log_date = body.log_date or date.today()  # Use today's date if none is provided
     logger.info(f"API: Creating or updating workout log for user_id {user_id} on log_date {workout_log_date}")
 
     try:
@@ -82,9 +82,9 @@ async def create_or_update_workout_log(request: Request, body: CreateOrUpdateWor
 @auth_service.requires_auth
 async def update_workout_log_fields(request: Request, body: UpdateWorkoutLogFieldsRequest, log_date: str):
     """
-    动态更新用户某天锻炼日志的部分字段
+    Update specific fields in a user's workout log for a given date.
     """
-    user_id = request.state.user_id  # 从 request.state 获取 user_id
+    user_id = request.state.user_id  # Retrieve user_id from request.state
     logger.info(f"API: Updating workout log fields for user_id {user_id} on log_date {log_date}")
     try:
         update_data = body.dict(exclude_unset=True)
@@ -107,9 +107,9 @@ async def update_workout_log_fields(request: Request, body: UpdateWorkoutLogFiel
 @auth_service.requires_auth
 async def calculate_total_progress(request: Request):
     """
-    计算用户所有锻炼日志的总进度
+    Calculate the total progress across all workout logs for a user.
     """
-    user_id = request.state.user_id  # 从 request.state 获取 user_id
+    user_id = request.state.user_id  # Retrieve user_id from request.state
     logger.info(f"API: Calculating total progress for user_id {user_id}")
     try:
         progress = service.calculate_total_progress(user_id)

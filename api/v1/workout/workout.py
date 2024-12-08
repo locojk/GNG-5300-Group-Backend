@@ -5,7 +5,6 @@
 from fastapi import APIRouter, HTTPException, Request
 from services.workout.fitness_goal_service import FitnessGoalService
 from services.workout.validation import CreateOrUpdateGoalRequest
-
 from utils.logger import Logger
 from services.user.auth_service import AuthService
 from utils.decorators import handle_response
@@ -16,16 +15,16 @@ service = FitnessGoalService()
 auth_service = AuthService()
 
 
-# 路由实现
+# Route implementations
 
 @router.get("/fitness_goal")
 @handle_response
 @auth_service.requires_auth
 async def get_fitness_goal(request: Request):
     """
-    获取用户的健身目标
+    Retrieve the user's fitness goal.
     """
-    user_id = request.state.user_id  # 从 request.state 获取 user_id
+    user_id = request.state.user_id  # Retrieve user_id from request.state
     result = service.get_fitness_goal(user_id)
     if not result["data"]:
         raise HTTPException(status_code=404, detail=result["message"])
@@ -37,9 +36,9 @@ async def get_fitness_goal(request: Request):
 @auth_service.requires_auth
 async def create_or_update_fitness_goal(request: Request, body: CreateOrUpdateGoalRequest):
     """
-    create fitness goal
+    Create or update the user's fitness goal.
     """
-    user_id = request.state.user_id  # from request.state get user_id
+    user_id = request.state.user_id  # Retrieve user_id from request.state
     result = service.create_or_update_fitness_goal(user_id=user_id, data=body.dict(exclude_unset=True))
     return {"status": "success", "message": result["message"], "data": result["data"]}
 
@@ -49,9 +48,9 @@ async def create_or_update_fitness_goal(request: Request, body: CreateOrUpdateGo
 @auth_service.requires_auth
 async def update_fitness_goal_fields(request: Request, body: CreateOrUpdateGoalRequest):
     """
-    动态更新用户健身目标的部分字段
+    Dynamically update specific fields of the user's fitness goal.
     """
-    user_id = request.state.user_id  # 从 request.state 获取 user_id
+    user_id = request.state.user_id  # Retrieve user_id from request.state
     try:
         # Extract fields to be updated
         update_data = body.dict(exclude_unset=True)

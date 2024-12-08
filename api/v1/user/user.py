@@ -1,3 +1,7 @@
+"""
+@Time ： 2024-11-23
+@Auth ： Adam Lyu
+"""
 from fastapi import APIRouter, Body, Request, HTTPException
 from services.user.user_service import UserService
 from utils.logger import Logger
@@ -11,41 +15,46 @@ auth_service = AuthService()
 user_service = UserService()
 
 
-# 用户注册路由
+# User registration route
 @router.post('/register')
 @handle_response
 async def register(data: dict = Body(...)):
     schema = RegistrationValidationSchema()
-    # 使用 marshmallow 验证数据
+    # Validate data using marshmallow
     validated_data = schema.load(data)
 
-    # 从验证后的数据中获取字段
+    # Extract fields from validated data
     username = validated_data['username']
     email = validated_data['email']
     password = validated_data['password']
 
-    # 注册用户
+    # Register user
     user_id = auth_service.register_user(username, email, password)
     logger.info(f"User registered successfully: {user_id}")
     return {"message": "Registration successful", "user_id": user_id}
 
 
-# 用户登录路由
+# User login route
 @router.post('/login')
 @handle_response
 async def login(data: dict = Body(...)):
     schema = LoginValidationSchema()
-    # 使用 marshmallow 验证数据
+    # Validate data using marshmallow
     validated_data = schema.load(data)
 
-    # 从验证后的数据中获取字段
+    # Extract fields from validated data
     email = validated_data['email']
     password = validated_data['password']
 
-    # 用户登录
+    # User login
     result = auth_service.login_user(email, password)
     logger.info(f"User logged in successfully: {result['user_id']}")
-    return {"message": "Login successful", "user_id": result['user_id'], "username": result['username'], "token": result['token']}
+    return {
+        "message": "Login successful",
+        "user_id": result['user_id'],
+        "username": result['username'],
+        "token": result['token'],
+    }
 
 
 @router.get("/profile")
@@ -53,7 +62,7 @@ async def login(data: dict = Body(...)):
 @auth_service.requires_auth
 async def get_user_profile(request: Request, user_id: str):
     """
-    获取用户个人资料
+    Retrieve user profile
     """
     user_info = user_service.get_user_info(user_id)
     if not user_info:
@@ -66,18 +75,18 @@ async def get_user_profile(request: Request, user_id: str):
 @auth_service.requires_auth
 async def update_user_profile(request: Request):
     """
-    更新用户个人资料
+    Update user profile
     """
-    # 从 request.state 中获取 user_id
+    # Retrieve user_id from request.state
     user_id = request.state.user_id
 
-    # 获取请求中的数据
+    # Get data from the request
     data = await request.json()
 
-    # 验证数据
+    # Validate data
     validated_data = UserProfileUpdateSchema(**data).dict(exclude_none=True)
 
-    # 更新用户信息
+    # Update user information
     user_service.update_user_info(user_id, **validated_data)
 
     return {"message": "User profile updated successfully"}
