@@ -11,29 +11,30 @@ load_platform_specific_env()
 class JsonFormatter(logging.Formatter):
     def __init__(self, json_format=False):
         """
-        初始化格式化器
-        :param json_format: 如果为 True，则文件日志使用 JSON 格式，否则为标准格式
+        Initialize the formatter.
+
+        :param json_format: If True, file logs will use JSON format; otherwise, standard format is used.
         """
         super().__init__()
         self.json_format = json_format
 
     def format(self, record):
-        # 通用的详细日志字段
+        # Common detailed log fields
         log_record = {
             "timestamp": self.formatTime(record, self.datefmt),
             "log_level": record.levelname,
             "log_id": str(uuid.uuid4()),
-            "file": os.path.basename(record.pathname),  # 文件名
-            "function": record.funcName,  # 函数名
-            "line": record.lineno,  # 行号
-            "message": record.getMessage(),  # 日志消息
+            "file": os.path.basename(record.pathname),  # File name
+            "function": record.funcName,  # Function name
+            "line": record.lineno,  # Line number
+            "message": record.getMessage(),  # Log message
         }
 
-        # 如果是 JSON 格式，直接返回 JSON 字符串
+        # Return JSON string if JSON format is enabled
         if self.json_format:
             return json.dumps(log_record)
 
-        # 标准格式返回字符串形式，包含详细信息
+        # Return a detailed string for standard formatting
         return (
             f"[{log_record['timestamp']}] {log_record['log_level']} "
             f"[{log_record['file']}:{log_record['line']} - {log_record['function']}] "
@@ -44,12 +45,13 @@ class JsonFormatter(logging.Formatter):
 class Logger:
     def __init__(self, name, level=None, log_dir="logs", log_file="application.log", audit_log_file="audit.log"):
         """
-        初始化 Logger
-        :param name: 日志名称（模块名）
-        :param level: 日志级别
-        :param log_dir: 日志目录
-        :param log_file: 应用日志文件名
-        :param audit_log_file: 审计日志文件名
+        Initialize the Logger.
+
+        :param name: Logger name (module name)
+        :param level: Logging level
+        :param log_dir: Directory for log files
+        :param log_file: Application log file name
+        :param audit_log_file: Audit log file name
         """
         if level is None:
             level = logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO
@@ -57,25 +59,25 @@ class Logger:
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
 
-        # 应用日志
+        # Application logs
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
 
         app_log_path = os.path.join(log_dir, log_file)
         app_file_handler = RotatingFileHandler(app_log_path, maxBytes=10 * 1024 * 1024, backupCount=5)
-        app_file_handler.setFormatter(JsonFormatter(json_format=True))  # 文件使用 JSON 格式
+        app_file_handler.setFormatter(JsonFormatter(json_format=True))  # Use JSON format for file logs
         self.logger.addHandler(app_file_handler)
 
         console_handler = logging.StreamHandler()
-        console_handler.setFormatter(JsonFormatter(json_format=False))  # 控制台使用标准格式
+        console_handler.setFormatter(JsonFormatter(json_format=False))  # Use standard format for console logs
         self.logger.addHandler(console_handler)
 
-        # 审计日志
+        # Audit logs
         audit_log_path = os.path.join(log_dir, audit_log_file)
         self.audit_logger = logging.getLogger(f"{name}_audit")
         self.audit_logger.setLevel(level)
         audit_file_handler = RotatingFileHandler(audit_log_path, maxBytes=10 * 1024 * 1024, backupCount=5)
-        audit_file_handler.setFormatter(JsonFormatter(json_format=True))  # 文件使用 JSON 格式
+        audit_file_handler.setFormatter(JsonFormatter(json_format=True))  # Use JSON format for audit file logs
         self.audit_logger.addHandler(audit_file_handler)
 
     def info(self, message):
@@ -94,17 +96,19 @@ class Logger:
         self.logger.critical(message, stacklevel=2)
 
     def set_level(self, level):
+        """Set the logging level for both application and audit loggers."""
         self.logger.setLevel(level)
         self.audit_logger.setLevel(level)
 
     def audit_log(self, user_id, action, resource, status, details=None):
         """
-        记录审计日志
-        :param user_id: 用户 ID
-        :param action: 操作类型
-        :param resource: 操作资源
-        :param status: 操作状态
-        :param details: 其他详情
+        Record an audit log.
+
+        :param user_id: User ID
+        :param action: Type of action performed
+        :param resource: Target resource of the action
+        :param status: Status of the action
+        :param details: Additional details (optional)
         """
         audit_record = {
             "timestamp": self._get_current_time(),
@@ -118,6 +122,6 @@ class Logger:
 
     @staticmethod
     def _get_current_time():
-        """获取当前时间的字符串格式"""
+        """Get the current time in ISO 8601 format."""
         from datetime import datetime
         return datetime.utcnow().isoformat()

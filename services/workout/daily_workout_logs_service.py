@@ -1,13 +1,15 @@
 """
-@Time ： 2024-11-23
-@Auth ： Adam Lyu
+Daily Workout Logs Service
+
+@Date: 2024-11-23
+@Author: Adam Lyu
 """
 from datetime import datetime, date as log_date
 from daos.workout.daily_workout_logs_dao import DailyWorkoutLogsDAO
 from pymongo.results import UpdateResult, InsertOneResult
 from utils.logger import Logger
 
-# 初始化日志记录器
+# Initialize logger
 logger = Logger(__name__)
 
 
@@ -17,7 +19,7 @@ class DailyWorkoutLogsService:
 
     def get_workout_log(self, user_id, log_date):
         """
-        Retrieve a workout log for a specific user and log_date.
+        Retrieve a workout log for a specific user and log date.
         """
         logger.info(f"Service: Fetching workout log for user_id: {user_id}, log_date: {log_date}")
         try:
@@ -36,7 +38,7 @@ class DailyWorkoutLogsService:
         """
         Create or update a workout log for a specific user.
         """
-        log_date = log_date or datetime.today().date()  # 如果未提供日期，则使用今天的日期
+        log_date = log_date or datetime.today().date()  # Use today's date if no date is provided
         logger.info(f"Service: Creating or updating workout log for user_id {user_id} on log_date {log_date}")
 
         try:
@@ -49,7 +51,7 @@ class DailyWorkoutLogsService:
                 avg_workout_duration=avg_workout_duration
             )
 
-            # 处理 MongoDB 的结果，确保可序列化
+            # Handle MongoDB results to ensure they are serializable
             if isinstance(result, UpdateResult):
                 result_data = {
                     "matched_count": result.matched_count,
@@ -59,7 +61,7 @@ class DailyWorkoutLogsService:
             elif isinstance(result, InsertOneResult):
                 result_data = {"inserted_id": str(result.inserted_id)}
             else:
-                result_data = result  # 如果是普通字典
+                result_data = result  # If it's already a dictionary
 
             logger.info(f"Workout log successfully created/updated for user_id {user_id} on log_date {log_date}")
             return result_data
@@ -90,6 +92,7 @@ class DailyWorkoutLogsService:
     def calculate_total_progress(self, user_id):
         """
         Calculate total progress for a user based on all workout logs.
+
         Returns:
             {
                 "key_statistics": {
@@ -107,15 +110,15 @@ class DailyWorkoutLogsService:
         """
         logger.info(f"Service: Calculating total progress for user_id: {user_id}")
         try:
-            # 获取总统计数据
+            # Retrieve total progress data
             total_progress = self.dao.calculate_total_progress(user_id)
             logger.debug(f"Total progress: {total_progress}")
 
-            # 获取每日数据
+            # Retrieve daily progress data
             daily_progress = self.dao.calculate_daily_progress(user_id)
             logger.debug(f"Daily progress: {daily_progress}")
 
-            # 计算前端需要的平均值
+            # Calculate averages needed for frontend display
             avg_calories_burnt_per_day = total_progress["total_calories_burnt"] / len(
                 daily_progress) if daily_progress else 0
             avg_workout_duration_per_session = total_progress["total_duration"] / total_progress["total_sessions"] if \
@@ -130,7 +133,7 @@ class DailyWorkoutLogsService:
                 },
                 "daily_progress": [
                     {
-                        "log_date": item["_id"]["log_date"].strftime("%Y-%m-%d"),  # 转换日期格式
+                        "log_date": item["_id"]["log_date"].strftime("%Y-%m-%d"),  # Convert date to string format
                         "total_workout_time": item["total_workout_time"],
                         "total_calories_burnt": item["total_calories_burnt"]
                     } for item in daily_progress

@@ -5,21 +5,28 @@ Password Reset Token Generator and Verifier
 @Author: Adam Lyu
 """
 
+import os
 from itsdangerous import URLSafeTimedSerializer
-from flask import current_app
+from utils.env_loader import load_platform_specific_env
 
-# Retrieve SECRET_KEY from configuration
+load_platform_specific_env()
+
+
+# Retrieve SECRET_KEY from environment variable or fallback
 def get_secret_key():
-    return current_app.config['SECRET_KEY']
+    return os.getenv('SECRET_KEY', 'your-default-secret-key')
 
-# Retrieve ALGORITHM from configuration, default to 'HS256'
+
+# Retrieve ALGORITHM from environment variable, default to 'HS256'
 def get_algorithm():
-    return current_app.config.get('ALGORITHM', 'HS256')
+    return os.getenv('ALGORITHM', 'HS256')
+
 
 def generate_reset_token(user_id):
     # Dynamically retrieve SECRET_KEY
     serializer = URLSafeTimedSerializer(get_secret_key())
     return serializer.dumps(user_id, salt='password-reset-salt')
+
 
 def verify_reset_token(token, expiration=3600):
     # Dynamically retrieve SECRET_KEY

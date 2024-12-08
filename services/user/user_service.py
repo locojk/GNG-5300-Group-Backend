@@ -2,9 +2,9 @@ from datetime import time
 from daos.user.users_dao import UserDAO
 from passlib.context import CryptContext
 from utils.auth_helpers import generate_reset_token
-from utils.email_helpers import send_reset_email
 from utils.logger import Logger
 from utils.env_loader import load_platform_specific_env
+
 load_platform_specific_env()
 logger = Logger(__name__)
 
@@ -69,7 +69,7 @@ class UserService:
         if not user:
             raise ValueError("User does not exist")
         token = generate_reset_token(user['_id'])
-        send_reset_email(user, token)
+        # send_reset_email(user, token)
 
     # Change user status
     def change_user_status(self, user_id, status):

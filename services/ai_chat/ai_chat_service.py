@@ -16,32 +16,33 @@ from daos.user.users_dao import UserDAO
 
 from utils.env_loader import load_platform_specific_env
 
-# 加载环境变量
+# Load environment variables
 load_platform_specific_env()
-logger = Logger(__name__)  # 初始化日志记录器
+logger = Logger(__name__)  # Initialize logger
 
 
 class AIChatService:
     def __init__(self):
         try:
             logger.info("Initializing AIChatService...")
-            # 初始化 Pinecone
+
+            # Initialize Pinecone
             self.pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
             logger.info("Pinecone initialized successfully.")
 
-            # 加载嵌入模型
+            # Load embedding model
             embedding_model_name = "sentence-transformers/all-MiniLM-L6-v2"
             self.embeddings = HuggingFaceEmbeddings(model_name=embedding_model_name)
             logger.info(f"Embedding model '{embedding_model_name}' loaded successfully.")
 
-            # 初始化向量存储
+            # Initialize vector store
             index_name = "gymrecommendation-huggingface"
             self.vector_store = PineconeVectorStore.from_existing_index(
                 embedding=self.embeddings, index_name=index_name
             )
             logger.info(f"Vector store '{index_name}' initialized successfully.")
 
-            # 配置语言模型
+            # Configure language model
             self.llm = ChatGroq(
                 model="llama-3.1-70b-versatile",
                 temperature=0.7,
@@ -51,22 +52,11 @@ class AIChatService:
             )
             logger.info("Language model configured successfully.")
 
-            # 创建检索问答链
+            # Create question-answering chain
             self.chain = load_qa_chain(llm=self.llm, chain_type='stuff')
             logger.info("Retrieval QA chain created successfully.")
 
-            # 初始化响应结构
-            # self.response_schemas = [
-            #     ResponseSchema(name="Workout Name", description="Name of the workout"),
-            #     ResponseSchema(name="Duration", description="Duration of the workout in minutes"),
-            #     ResponseSchema(name="Difficulty", description="Difficulty level of the workout"),
-            #     ResponseSchema(name="Exercises", description="List of exercises included in the workout, with instructions for each exercise"),
-            #     ResponseSchema(name="Estimated Calories Burned", description="Estimated calories burned during the workout"),
-            #     ResponseSchema(name="Equipment Needed", description="List of equipment needed for the workout"),
-            #     ResponseSchema(name="Additional Tips", description="Any additional tips for the user"),
-            #     ResponseSchema(name="Total Calories Burned", description="Total calories burned for the entire workout plan")
-            # ]
-            
+            # Define response schemas for structured output
             self.response_schemas = [
                 ResponseSchema(name="Workout Name", description="Name of the workout"),
                 ResponseSchema(name="Duration", description="Duration of the workout in minutes"),
@@ -80,22 +70,25 @@ class AIChatService:
                             "type": "object",
                             "properties": {
                                 "Name": {"type": "string", "description": "Name of the exercise"},
-                                "Instructions": {"type": "string", "description": "Step-by-step instructions for performing the exercise"}
+                                "Instructions": {"type": "string",
+                                                 "description": "Step-by-step instructions for performing the exercise"}
                             },
                             "required": ["Name", "Instructions"]
                         }
                     }
                 ),
-                ResponseSchema(name="Estimated Calories Burned", description="Estimated calories burned during the workout, only give me a number, no anything else, no range"),
+                ResponseSchema(name="Estimated Calories Burned",
+                               description="Estimated calories burned during the workout"),
                 ResponseSchema(name="Equipment Needed", description="List of equipment needed for the workout"),
                 ResponseSchema(name="Additional Tips", description="Any additional tips for the user"),
-                ResponseSchema(name="Total Calories Burned", description="Total calories burned for the entire workout plan")
+                ResponseSchema(name="Total Calories Burned",
+                               description="Total calories burned for the entire workout plan")
             ]
             self.parser = StructuredOutputParser.from_response_schemas(self.response_schemas)
             self.format_instructions = self.parser.get_format_instructions()
             logger.info("StructuredOutputParser initialized successfully.")
 
-            # 初始化 UserDAO
+            # Initialize DAOs
             self.user_dao = UserDAO()
             self.fitness_goal_dao = FitnessGoalDAO()
 
@@ -104,7 +97,7 @@ class AIChatService:
             raise
 
     def retrieve_query(self, query, k=2):
-        """从向量存储中检索相似的文档"""
+        """Retrieve similar documents from the vector store."""
         try:
             logger.info(f"Retrieving query '{query}' with top {k} results...")
             results = self.vector_store.similarity_search(query, k=k)
@@ -115,7 +108,7 @@ class AIChatService:
             raise
 
     def generate_prompt(self, input_data):
-        """生成模型所需的提示"""
+        """Generate a prompt for the model."""
         try:
             logger.info("Generating prompt for input data...")
             user_info = [
@@ -134,7 +127,7 @@ class AIChatService:
             prompt = (
                 f"Based on the following user information:\n{user_info_str}\n\n"
                 f"Provide a personalized workout recommendation strictly in JSON format. "
-                f"Make sure the JSON follows this structure:\n\n"
+                f"Ensure the JSON follows this structure:\n\n"
                 f"{self.format_instructions}"
             )
             logger.info("Prompt generated successfully.")
@@ -144,11 +137,11 @@ class AIChatService:
             raise
 
     def retrieve_answer(self, user_id, query):
-        """根据用户输入生成回答"""
+        """Generate an answer based on user input."""
         try:
             logger.info(f"Retrieving answer for user_id {user_id} and query '{query}'...")
 
-            # 从用户信息表查询用户详情
+            # Retrieve user and fitness goal information
             user_info = self.user_dao.get_user_by_id(user_id)
             goal_info = self.fitness_goal_dao.get_goal_by_user_id(user_id)
             logger.debug(f"user_info -> {user_info}")
@@ -157,7 +150,7 @@ class AIChatService:
             if not user_info:
                 raise ValueError(f"User with ID {user_id} not found.")
 
-            # 整合用户信息和查询内容
+            # Prepare input data
             input_data = {
                 "query": query,
                 "Sex": user_info.get("gender"),
@@ -168,24 +161,21 @@ class AIChatService:
                 "Fitness_Goal": goal_info.get("goal", "General Fitness"),
                 "WorkoutDuration": user_info.get("workout_duration", "Any"),
                 "RestDay": user_info.get("rest_days", "Any"),
-                # "Hypertension": user_info.get("hypertension"),
-                # "Diabetes": user_info.get("diabetes"),
-                # "BMI": user_info.get("bmi"),
             }
 
-            # 检索匹配文档
+            # Retrieve matching documents
             matching_docs = self.retrieve_query(query)
 
-            # 生成提示
+            # Generate prompt
             question = self.generate_prompt(input_data)
 
-            # 调用问答链生成结果
+            # Get results from QA chain
             response = self.chain.invoke({
                 "input_documents": matching_docs,
                 "question": question,
             })
 
-            # 解析响应
+            # Parse response
             parsed_output = self.parser.parse(response["output_text"])
             logger.info("Answer retrieved and parsed successfully.")
             return parsed_output
@@ -201,20 +191,20 @@ class AIChatService:
 if __name__ == "__main__":
     import json
 
-    # 初始化服务
+    # Initialize the service
     service = AIChatService()
     logger.info("AIChatService initialized for testing.")
 
-    # 定义测试用户 ID 和查询
-    test_user_id = '6741f0e75b6291baa9b7a273'  # 替换为测试用户的 ID
+    # Define a test user ID and query
+    test_user_id = '6741f0e75b6291baa9b7a273'  # Replace with a valid test user ID
     test_query = "What is the best exercise for weight loss?"
 
     try:
-        # 调用服务生成回答
+        # Test retrieve_answer method
         logger.info(f"Testing retrieve_answer for user_id {test_user_id} with query '{test_query}'...")
         response = service.retrieve_answer(user_id=test_user_id, query=test_query)
 
-        # 打印测试输出
+        # Print test output
         print("\nTest User ID:", test_user_id)
         print("\nTest Query:", test_query)
         print("\nTest Output:")
@@ -223,40 +213,3 @@ if __name__ == "__main__":
 
     except Exception as e:
         logger.error(f"Test failed with error: {str(e)}")
-
-# if __name__ == "__main__":
-#     import json
-#
-#     # 初始化服务
-#     service = AIChatService()
-#     logger.info("AIChatService initialized for testing.")
-#
-#     # 定义测试输入
-#     test_input = {
-#         "query": "What is the best exercise for weight loss?",
-#         "Sex": "Female",
-#         "Age": 30,
-#         "Height": 165,
-#         "Weight": 70,
-#         "Hypertension": False,
-#         "Diabetes": False,
-#         "BMI": 25.7,
-#         "Level": "Intermediate",
-#         "Fitness Goal": "Weight Loss",
-#         "Fitness Type": "Cardio"
-#     }
-#
-#     try:
-#         # 调用服务生成回答
-#         logger.info("Testing retrieve_answer with sample input...")
-#         response = service.retrieve_answer(test_input)
-#
-#         # 打印测试输出
-#         print("\nTest Input:")
-#         print(json.dumps(test_input, indent=4))
-#         print("\nTest Output:")
-#         print(json.dumps(response, indent=4))
-#         logger.info("Test completed successfully.")
-#
-#     except Exception as e:
-#         logger.error(f"Test failed with error: {str(e)}")
