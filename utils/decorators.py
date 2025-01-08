@@ -9,12 +9,15 @@ from functools import wraps
 from fastapi.responses import JSONResponse
 from marshmallow import ValidationError
 from fastapi import HTTPException
-from bson import ObjectId  # Import ObjectId
-from datetime import datetime  # Import datetime
+from bson import ObjectId  # Import ObjectId for MongoDB handling
+from datetime import datetime  # Import datetime for date serialization
 from utils.env_loader import load_platform_specific_env
 import json
 import logging
+
+# Load environment-specific configurations
 load_platform_specific_env()
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,31 +25,38 @@ logger = logging.getLogger(__name__)
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, ObjectId):
-            return str(obj)  # Convert ObjectId to a string
+            return str(obj)  # Convert ObjectId to string for serialization
         elif isinstance(obj, datetime):
-            return obj.isoformat()  # Convert datetime to ISO format string
+            return obj.isoformat()  # Convert datetime to ISO 8601 string
         return super().default(obj)
 
 
 def handle_response(f):
+    """
+    Decorator to handle and standardize API responses.
+
+    It wraps the original function to:
+    - Serialize the response using a custom JSON encoder.
+    - Handle exceptions and return appropriate HTTP responses.
+    """
     @wraps(f)
     async def decorated_function(*args, **kwargs):
         try:
-            # 获取原始函数的返回值
+            # Call the original function and get its return value
             result = await f(*args, **kwargs)
 
-            # 如果返回值是 JSONResponse，直接返回
+            # If the return value is already a JSONResponse, return it as-is
             if isinstance(result, JSONResponse):
                 return result
 
-            # 如果返回值是元组，解包为内容和状态码
+            # If the return value is a tuple, unpack it into data and status_code
             if isinstance(result, tuple):
                 data, status_code = result
             else:
                 data = result
-                status_code = 200  # 默认状态码为 200
+                status_code = 200  # Default status code is 200
 
-            # 使用自定义 JSONEncoder 序列化数据
+            # Serialize the data using the custom JSONEncoder
             serialized_data = json.loads(CustomJSONEncoder().encode(data))
             return JSONResponse(content=serialized_data, status_code=status_code)
 
@@ -61,4 +71,3 @@ def handle_response(f):
             raise HTTPException(status_code=500, detail="Internal server error")
 
     return decorated_function
-
